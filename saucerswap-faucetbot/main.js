@@ -28,7 +28,8 @@ const client = Client.forName(config.HEDERA_NETWORK).setOperator(
   operatorId,
   operatorKey
 );
-const tokenId = config.SAUCE_TOKEN_ID;
+const tokenId = config.TOKEN_ID;
+const tokenName = config.TOKEN_NAME;
 const accountIdsBeingProcessed = new Set();
 const amount = 0.11;
 const decimals = 6;
@@ -78,11 +79,11 @@ faucetBot.on("messageCreate", async (msg) => {
   // switch-case on commands
   switch (cmd) {
     case "!manual":
-      const response = `Faucet Bot is here to dispense *$SAUCE!*
+      const response = `Faucet Bot is here to dispense *$${tokenName}!*
 
-      Currently SAUCE is dispensed in 8 hour intervals at the fixed rate of 0.33
+      Currently ${tokenName} is dispensed in 8 hour intervals at the fixed rate of 0.33
       
-      To get $SAUCE, first associate your account with token ID: ${tokenId}
+      To get $${tokenName}, first associate your account with token ID: ${tokenId}
       Then proceed to run the command: **!sauceme <INSERT_ACCOUNT_ID>**
 
       Please note that amounts and the schedule may change!
@@ -190,7 +191,7 @@ faucetBot.on("messageCreate", async (msg) => {
         }
       } catch (e) {
         replyThenDelete(
-          `HBARs couldn't be dispensed! <@453749295309389834> HEEEEELP!!! <:aaa:921863627655508008>`,
+          `HBARs couldn't be dispensed!`,
           userMsg
         );
         console.debug(`Failed to dispense ${hbarPayout} HBARs for: ${accountId}`);
@@ -328,14 +329,14 @@ faucetBot.on("messageCreate", async (msg) => {
         // if tx success, insert values into table...
         if (receipt.status._code == 22) {
           await db.query( `INSERT INTO faucet_tracker (accountId) VALUE (?);`, [accountId] );
-          console.debug( `${payout / Math.pow(10, 6)} $SAUCE sent to ${accountId}` );
+          console.debug( `${payout / Math.pow(10, 6)} ${tokenName} sent to ${accountId}` );
           replyThenDelete(`Success!`, userMsg);
         } else {
           throw new Error(`Tx receipt status is not a success!`);
         }
       } catch (e) {
-        replyThenDelete(`Something went wrong! <@453749295309389834> HEEEEELP!!! <:aaa:921863627655508008>`, userMsg);
-        console.debug(`Failed to dispense ${ payout / Math.pow(10, 6) } $SAUCE for: ${accountId}`);
+        replyThenDelete(`Something went wrong!`, userMsg);
+        console.debug(`Failed to dispense ${ payout / Math.pow(10, 6) } ${tokenName} for: ${accountId}`);
         console.debug(e);
       }
       accountIdsBeingProcessed.delete(accountId);
