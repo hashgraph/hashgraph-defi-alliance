@@ -1,0 +1,140 @@
+@tailwind base;
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgb(120, 120, 120);
+  border-radius: 2px;
+}
+
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background-body: #292929;
+  --background-content: #1d1d1d93;
+  --text-color: #E5E5E5;
+  --primary-color: #c000ff;
+  --second-color: #89caff;
+  --blockquote-color: rgba(89, 126, 3, 0.2);
+}
+
+html {
+  @apply h-full;
+}
+
+body {
+  @apply h-full;
+  @apply bg-[#170026];
+  @apply text-[#e6e6e6];
+
+  color: var(--text-color);
+  margin: 0;
+  font-size: 1rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+div#root {
+  @apply h-full;
+}
+
+@layer components {
+  main.main-docs {
+    width: 50%;
+    margin: auto;
+    margin-bottom: 3rem;
+    margin-top: 1rem;
+    background-color: var(--background-content);
+    box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+    border-radius: 3px;
+  }
+
+  h1 {
+    display: block;
+    font-size: 2em;
+    margin-top: 0.67em;
+    margin-bottom: 0.67em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
+
+  h2 {
+    display: block;
+    font-size: 1.5em;
+    margin-top: 0.83em;
+    margin-bottom: 0.83em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
+
+  h3 {
+    display: block;
+    font-size: 1.17em;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
+
+  h4 {
+    display: block;
+    margin-top: 1.33em;
+    margin-bottom: 1.33em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
+
+  h5 {
+    display: block;
+    font-size: .83em;
+    margin-top: 1.67em;
+    margin-bottom: 1.67em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
+
+  h6 {
+    display: block;
+    font-size: .67em;
+    margin-top: 2.33em;
+    margin-bottom: 2.33em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
+
+  @media screen and (max-width: 1024px) {
+    main.main-docs {
+      width: 70%;
+    }
+  }
+
+  @media screen and (max-width: 920px) {
+    main.main-docs {
+      width: 80%;
+    }
+  }
+
+  @media screen and (max-width: 640px) {
+    main.main-docs {
+      width: 100%;
+    }
+  }
+}
