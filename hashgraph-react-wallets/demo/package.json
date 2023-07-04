@@ -1,6 +1,5 @@
 {
   "name": "demo",
-  "private": true,
   "version": "0.0.0",
   "homepage": "https://hashgraph.github.io/hashgraph-react-wallets/",
   "type": "module",
@@ -13,7 +12,7 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
-    "@buidlerlabs/hashgraph-react-wallets": "file:../buidlerlabs-hashgraph-react-wallets-1.0.0.tgz",
+    "@buidlerlabs/hashgraph-react-wallets": "^1.0.0",
     "buffer": "^6.0.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
