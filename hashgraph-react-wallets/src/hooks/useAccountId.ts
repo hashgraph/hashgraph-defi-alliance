@@ -4,14 +4,14 @@ import { useWallet } from './useWallet'
 import { AccountId } from '@hashgraph/sdk'
 
 interface IAccountIdResult {
-  accountId: AccountId
+  accountId: AccountId | null
   loading: boolean
 }
 
 export function useAccountId<TConnector extends HWBridgeConnector>(connector?: TConnector) {
   const wallet = useWallet(connector)
   const [accountIdResult, setAccountIdResult] = useState<IAccountIdResult>({
-    accountId: AccountId.fromString('0.0.0'),
+    accountId: null,
     loading: false,
   })
 

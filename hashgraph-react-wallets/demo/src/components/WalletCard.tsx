@@ -43,7 +43,7 @@ const WalletCard = ({ name, iconSrc, connector }: IProps) => {
         {
             isConnected && <div className="mt-4 flex flex-col gap-2 items-center">
                 <div className="bg-white/10 text-white text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    {loadingAccountId ? 'Loading...' : accountId.toString()}
+                    {loadingAccountId ? 'Loading...' : accountId?.toString()}
                 </div>
 
                 <span className="flex items-center gap-2 bg-white/10 text-white text-xs font-medium pl-2.5 pr-1 py-0.5 rounded-full">

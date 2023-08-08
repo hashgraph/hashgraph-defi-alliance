@@ -283,7 +283,7 @@ const App = () => {
 The signature of the returned object looks as follows:
 ```tsx
 {
-    balance: AccountBalance
+    balance: AccountBalanceJson
     loading: boolean
     updateBalance: () => void
 }

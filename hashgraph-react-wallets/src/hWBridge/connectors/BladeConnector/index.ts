@@ -1,1 +1,1 @@
-export { BladeConnector } from './BladeConnector'
+export { default as BladeConnector } from './BladeConnector'
