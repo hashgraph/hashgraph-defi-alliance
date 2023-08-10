@@ -3,12 +3,12 @@ import { HashConnect, HashConnectTypes, MessageTypes } from 'hashconnect'
 import { getBytesOf } from '../../Utils'
 import { HashConnectWallet } from './types'
 import { HWBridgeDAppMetadata, HederaNetwork } from '../../types'
-import IConnector from '../../interfaces/IConnector'
+import { IConnector } from '../../interfaces'
 import { HashConnectProvider } from 'hashconnect/dist/esm/provider/provider'
 import { HWBConnectorProps } from '../types'
 import { HP_APP_METADATA_STORAGE_KEY, HP_INNER_STORAGE_KEY, HP_WAIT_FOR_EXTENSION_RESPONSE_TIMEOUT } from './constants'
 
-export class HashpackConnector implements IConnector {
+class HashpackWalletConnector implements IConnector {
   private readonly _network: HederaNetwork
   private readonly _metadata: HWBridgeDAppMetadata
   private readonly _debug: boolean
@@ -18,7 +18,7 @@ export class HashpackConnector implements IConnector {
   constructor({ network, metadata, debug = false, onAutoPairing }: HWBConnectorProps) {
     this._network = network
     this._metadata = metadata
-    this._debug = debug || false
+    this._debug = debug
     this._onAutoPairing = onAutoPairing
     this._initHashConnect(true)
   }
@@ -66,52 +66,57 @@ export class HashpackConnector implements IConnector {
   }
 
   async getBridgedWallet(hc: HashConnect, provider: HashConnectProvider): Promise<HashConnectWallet> {
-    const hcData = hc.hcData.pairingData[0]
-    const hcNetworkName = hcData.network
-    const accountToSign = hcData.accountIds[0]
-    const topic = hcData.topic
-    const sdkClient = Client.forName(hcNetworkName)
-    const hcSigner = hc.getSigner(provider) as HashConnectWallet
-    const mirrorSubdomain = hcNetworkName === 'mainnet' ? 'mainnet-public' : 'testnet'
-    const accountInfoFetchUrl = `https://${mirrorSubdomain}.mirrornode.hedera.com/api/v1/accounts/${accountToSign}`
-    const accountInfoResponse = await fetch(accountInfoFetchUrl)
-    const jAccountInfo = await accountInfoResponse.json()
-    const accountPublicKey = PublicKey.fromString(jAccountInfo.key.key)
+    try {
+      const hcData = hc.hcData.pairingData[0]
+      const hcNetworkName = hcData.network
+      const accountToSign = hcData.accountIds[0]
+      const topic = hcData.topic
+      const sdkClient = Client.forName(hcNetworkName)
+      const hcSigner = hc.getSigner(provider) as HashConnectWallet
+      const mirrorSubdomain = hcNetworkName === 'mainnet' ? 'mainnet-public' : 'testnet'
+      const accountInfoFetchUrl = `https://${mirrorSubdomain}.mirrornode.hedera.com/api/v1/accounts/${accountToSign}`
+      const accountInfoResponse = await fetch(accountInfoFetchUrl)
+      const jAccountInfo = await accountInfoResponse.json()
+      const accountPublicKey = PublicKey.fromString(jAccountInfo.key.key)
 
-    // This region adapts the original HashConnectSigner received from HashConnect to the expected interface by Venin
-    // We need to export the provider so that Venin's underlying Wallet can make use of it when query-ing for the receipts
-    // This was present in the original HIP-338 Wallet specs
-    hcSigner.getProvider = () => {
-      return provider
-    }
-
-    hcSigner.getAccountKey = () => {
-      return accountPublicKey
-    }
-
-    // Overwriting the underlying call method so that
-    //   1. returnTransaction is set to 'true'
-    //   2. we guard against trying to sign queries (which hashpack does not know how to do)
-    hcSigner.call = async <RequestT, ResponseT, OutputT>(request: Executable<RequestT, ResponseT, OutputT>) => {
-      const transaction = {
-        byteArray: getBytesOf(request),
-        metadata: {
-          accountToSign,
-          returnTransaction: true,
-        },
-        topic,
-      }
-      const { error, signedTransaction } = await hc.sendTransaction(topic, transaction)
-
-      if (error) {
-        throw new Error(`There was an issue while signing the request: ${error}`)
+      // This region adapts the original HashConnectSigner received from HashConnect to the expected interface by Venin
+      // We need to export the provider so that Venin's underlying Wallet can make use of it when query-ing for the receipts
+      // This was present in the original HIP-338 Wallet specs
+      hcSigner.getProvider = () => {
+        return provider
       }
 
-      const sdkSignedTransaction = Transaction.fromBytes(signedTransaction as Uint8Array)
+      hcSigner.getAccountKey = () => {
+        return accountPublicKey
+      }
 
-      return sdkSignedTransaction.execute(sdkClient) as unknown as Promise<OutputT>
+      // Overwriting the underlying call method so that
+      //   1. returnTransaction is set to 'true'
+      //   2. we guard against trying to sign queries (which hashpack does not know how to do)
+      hcSigner.call = async <RequestT, ResponseT, OutputT>(request: Executable<RequestT, ResponseT, OutputT>) => {
+        const transaction = {
+          byteArray: getBytesOf(request),
+          metadata: {
+            accountToSign,
+            returnTransaction: true,
+          },
+          topic,
+        }
+        const { error, signedTransaction } = await hc.sendTransaction(topic, transaction)
+
+        if (error) {
+          throw new Error(`There was an issue while signing the request: ${error}`)
+        }
+
+        const sdkSignedTransaction = Transaction.fromBytes(signedTransaction as Uint8Array)
+
+        return sdkSignedTransaction.execute(sdkClient) as unknown as Promise<OutputT>
+      }
+      return hcSigner
+    } catch (e) {
+      this.wipePairingData();
+      throw new Error("The signer could not be retrieved. It's possible that the cached account doesn't exist. Please attempt to establish a new connection.");
     }
-    return hcSigner
   }
 
   async getConnection(): Promise<HashConnectWallet | null> {
@@ -187,3 +192,5 @@ export class HashpackConnector implements IConnector {
     }
   }
 }
+
+export default HashpackWalletConnector;

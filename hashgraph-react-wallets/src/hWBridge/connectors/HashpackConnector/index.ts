@@ -1,1 +1,1 @@
-export { HashpackConnector } from './HashpackConnector'
+export { default as HashpackConnector } from './HashpackConnector'

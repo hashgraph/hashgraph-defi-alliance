@@ -8,6 +8,7 @@ export class HWBridgeSession {
   #isConnected: boolean = false
   #isInitialized: boolean = false
   #extensionReady: boolean = false
+  #autoPaired: boolean = false
 
   constructor({ Connector, onUpdate, network, metadata, debug }: HWBridgeSessionProps) {
     this.#connector = new Connector({
@@ -34,6 +35,7 @@ export class HWBridgeSession {
   #_onAutoPairing(signer: HWBridgeSigner): void {
     this.#signer = signer
     this.#isConnected = !!signer
+    this.#autoPaired = true;
     this.#onUpdate(this)
   }
 
@@ -85,5 +87,9 @@ export class HWBridgeSession {
 
   get signer(): HWBridgeSigner | null {
     return this.#signer
+  }
+
+  get autoPaired(): boolean {
+    return this.#autoPaired
   }
 }

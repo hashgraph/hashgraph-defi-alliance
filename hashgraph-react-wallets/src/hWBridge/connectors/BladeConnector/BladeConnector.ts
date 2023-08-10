@@ -1,16 +1,17 @@
+import { IConnector } from '../../interfaces'
 import { HWBridgeDAppMetadata, HederaNetwork } from '../../types'
-import IConnector from '../../interfaces/IConnector'
-import { BladeSigner, BladeWalletError, SessionParams } from '@bladelabs/blade-web3.js'
+import { BladeConnector, ConnectorStrategy, BladeWalletError, SessionParams } from '@bladelabs/blade-web3.js'
 import { DAppMetadata } from '@hashgraph/hedera-wallet-connect'
 import { BLADE_EXTENSION_POLLING_ATTEMPTS, BLADE_EXTENSION_POLLING_INTERVAL, BLADE_STORAGE_KEY } from './constants'
 import { BladeWallet } from './types'
 import { HWBConnectorProps } from '../types'
+import { TransactionReceiptQuery } from '@hashgraph/sdk'
 
-export class BladeConnector implements IConnector {
+class BladeWalletConnector implements IConnector {
   private readonly _network: HederaNetwork
   private readonly _metadata: HWBridgeDAppMetadata
   private readonly _debug: boolean
-  private _bladeSigner!: BladeWallet | null
+  private _bladeConnector: BladeConnector | null
 
   constructor({ network, metadata, debug = false }: HWBConnectorProps) {
     this._network = network
@@ -23,20 +24,22 @@ export class BladeConnector implements IConnector {
 
     try {
       const bladeMetadata = Object.keys(this._metadata || {}).length > 0 ? (this._metadata as DAppMetadata) : undefined
-      this._bladeSigner = new BladeSigner(bladeMetadata) as BladeWallet
+      this._bladeConnector = new BladeConnector(ConnectorStrategy.EXTENSION, bladeMetadata)
 
       if (this._debug)
         console.log(
           `[Blade Connector]: Create/Get blade session for ${this._network}. Blade popup should appear if there is no active session`,
         )
 
-      const connectedAccounts = await this._bladeSigner.createSession({ network: this._network } as SessionParams)
-      if (this._debug && Array.isArray(connectedAccounts) && connectedAccounts.length) {
-        console.log('[Blade Connector]: Connected with accounts', connectedAccounts)
+      const pairedAccountIds = await this._bladeConnector.createSession({ network: this._network } as SessionParams)
+      const bladeSigner = this._bladeConnector.getSigner() as BladeWallet;
+
+      if (this._debug && Array.isArray(pairedAccountIds) && pairedAccountIds.length) {
+        console.log('[Blade Connector]: Connected with accounts', pairedAccountIds)
       }
 
       const localSession = {
-        connectedAccounts,
+        pairedAccountIds,
         connected: true,
         networkName: this._network,
       }
@@ -44,9 +47,17 @@ export class BladeConnector implements IConnector {
       if (this._debug) console.log('[Blade Connector]: Saving local session')
       localStorage.setItem(BLADE_STORAGE_KEY, JSON.stringify(localSession))
 
-      return this._bladeSigner
+      bladeSigner.getProvider = () => ({
+        getTransactionReceipt: (transactionId: string) => {
+          return new TransactionReceiptQuery()
+            .setTransactionId(transactionId)
+            .executeWithSigner(bladeSigner!)
+        }
+      })
+
+      return bladeSigner
     } catch (err) {
-      this._bladeSigner = null
+      this._bladeConnector = null
 
       if (err instanceof Error) {
         if (err.name === BladeWalletError.ExtensionNotFound) {
@@ -134,8 +145,8 @@ export class BladeConnector implements IConnector {
     return (
       !!bladeDataString &&
       bladeData.connected &&
-      Array.isArray(bladeData.connectedAccounts) &&
-      bladeData.connectedAccounts.length > 0 &&
+      Array.isArray(bladeData.pairedAccountIds) &&
+      bladeData.pairedAccountIds.length > 0 &&
       bladeData.networkName === this._network
     )
   }
@@ -145,8 +156,8 @@ export class BladeConnector implements IConnector {
       if (this._debug) console.log('[Blade Connector]: Kill blade wallet session and wipe local data')
       localStorage.removeItem(BLADE_STORAGE_KEY)
 
-      await this._bladeSigner?.killSession()
-      this._bladeSigner = null
+      await this._bladeConnector?.killSession()
+      this._bladeConnector = null
       return true
     } catch (e) {
       console.error(e)
@@ -154,3 +165,5 @@ export class BladeConnector implements IConnector {
     }
   }
 }
+
+export default BladeWalletConnector;

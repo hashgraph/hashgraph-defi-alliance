@@ -24,7 +24,12 @@ export function useBalance<TConnector extends HWBridgeConnector>(connector?: TCo
       const connectedSession = connector ? sessions.find((session) => session.isSessionFor(connector)) : sessions[0]
 
       if (connectedSession && connectedSession.signer) {
-        const balance = await connectedSession.signer.getAccountBalance()
+        const accountBalance = await connectedSession.signer.getAccountBalance()
+        
+        const balance = accountBalance instanceof AccountBalance
+          ? accountBalance.toJSON()
+          : accountBalance;
+
         setAccountBalance((prevState) => ({ ...prevState, balance, loading: false, shouldUpdate: false }))
         return
       }
