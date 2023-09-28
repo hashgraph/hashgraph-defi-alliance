@@ -9,6 +9,7 @@ import {
   HWBridgeConnector,
 } from '../hWBridge/types'
 import { HWBridgeSession } from '../hWBridge/HWBridgeSession'
+import HWContextProvider from './HWContextProvider'
 
 interface IProps {
   children: ReactNode | ReactNode[]
@@ -57,7 +58,11 @@ const HWBridgeProvider = ({
 
   const value = useMemo(() => context, [context]) || ({} as IHWBridgeContext)
 
-  return <HWBridgeContext.Provider value={value}>{children}</HWBridgeContext.Provider>
+  return (
+    <HWBridgeContext.Provider value={value}>
+      <HWContextProvider>{children}</HWContextProvider>
+    </HWBridgeContext.Provider>
+  )
 }
 
 export default React.memo(HWBridgeProvider)
