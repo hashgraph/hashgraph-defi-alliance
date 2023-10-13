@@ -2,7 +2,7 @@ import { HWBridgeSession } from '../hWBridge'
 import { HWBridgeConnector } from '../hWBridge/connectors/types'
 import { useHWBridge } from './useHWBridge'
 
-export function useWallet<TConnector extends HWBridgeConnector>(connector?: TConnector): HWBridgeSession {
+export function useWallet<TConnector extends HWBridgeConnector>(connector?: TConnector | null): HWBridgeSession {
   const hWBridge = useHWBridge()
 
   if (!hWBridge) {

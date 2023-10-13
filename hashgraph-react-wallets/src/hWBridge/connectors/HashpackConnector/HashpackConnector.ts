@@ -114,8 +114,10 @@ class HashpackWalletConnector implements IConnector {
       }
       return hcSigner
     } catch (e) {
-      this.wipePairingData();
-      throw new Error("The signer could not be retrieved. It's possible that the cached account doesn't exist. Please attempt to establish a new connection.");
+      this.wipePairingData()
+      throw new Error(
+        "The signer could not be retrieved. It's possible that the cached account doesn't exist. Please attempt to establish a new connection.",
+      )
     }
   }
 
@@ -193,4 +195,4 @@ class HashpackWalletConnector implements IConnector {
   }
 }
 
-export default HashpackWalletConnector;
+export default HashpackWalletConnector

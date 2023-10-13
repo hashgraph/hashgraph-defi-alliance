@@ -7,7 +7,7 @@ import Button from "./Button";
 const TX_STATUS_RESET_DELAY = 5000;
 
 interface IProps {
-    connector: HWBridgeConnector
+    connector?: HWBridgeConnector
 }
 
 interface IState {
@@ -75,7 +75,7 @@ const TransactionDemo = ({ connector }: IProps) => {
             setState(prevState => ({ ...prevState, loading: true }));
 
             const tx = await new TransferTransaction()
-                .addHbarTransfer(accountId, -state.amount)
+                .addHbarTransfer(accountId || '', -state.amount)
                 .addHbarTransfer(AccountId.fromString(state.recipient), state.amount)
                 .freezeWithSigner(signer)
 

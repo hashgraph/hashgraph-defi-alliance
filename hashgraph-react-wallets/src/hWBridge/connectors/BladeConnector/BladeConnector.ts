@@ -32,7 +32,7 @@ class BladeWalletConnector implements IConnector {
         )
 
       const pairedAccountIds = await this._bladeConnector.createSession({ network: this._network } as SessionParams)
-      const bladeSigner = this._bladeConnector.getSigner() as BladeWallet;
+      const bladeSigner = this._bladeConnector.getSigner() as BladeWallet
 
       if (this._debug && Array.isArray(pairedAccountIds) && pairedAccountIds.length) {
         console.log('[Blade Connector]: Connected with accounts', pairedAccountIds)
@@ -49,10 +49,8 @@ class BladeWalletConnector implements IConnector {
 
       bladeSigner.getProvider = () => ({
         getTransactionReceipt: (transactionId: string) => {
-          return new TransactionReceiptQuery()
-            .setTransactionId(transactionId)
-            .executeWithSigner(bladeSigner!)
-        }
+          return new TransactionReceiptQuery().setTransactionId(transactionId).executeWithSigner(bladeSigner!)
+        },
       })
 
       return bladeSigner
@@ -166,4 +164,4 @@ class BladeWalletConnector implements IConnector {
   }
 }
 
-export default BladeWalletConnector;
+export default BladeWalletConnector

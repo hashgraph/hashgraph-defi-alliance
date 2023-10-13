@@ -1,7 +1,9 @@
 import { HWBridgeConnectorInstance } from './connectors/types'
 import { HWBridgeSessionProps, HWBridgeSigner } from './types'
+import short from 'short-uuid'
 
 export class HWBridgeSession {
+  readonly #sessionId: string
   readonly #connector: HWBridgeConnectorInstance
   #signer: HWBridgeSigner | null = null
   #onUpdate: (session?: HWBridgeSession | null) => void
@@ -11,6 +13,7 @@ export class HWBridgeSession {
   #autoPaired: boolean = false
 
   constructor({ Connector, onUpdate, network, metadata, debug }: HWBridgeSessionProps) {
+    this.#sessionId = short.generate()
     this.#connector = new Connector({
       network,
       metadata,
@@ -67,6 +70,10 @@ export class HWBridgeSession {
 
   async #checkExtensionPresence(): Promise<boolean> {
     return await this.#connector?.checkExtensionPresence()
+  }
+
+  get sessionId(): string {
+    return this.#sessionId
   }
 
   get extensionReady(): boolean {

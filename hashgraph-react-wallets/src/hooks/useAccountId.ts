@@ -1,35 +1,40 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { HWBridgeConnector } from '../hWBridge/connectors/types'
-import { useWallet } from './useWallet'
+import { useHWContext } from './useHWContext'
 import { AccountId } from '@hashgraph/sdk'
+import { useWallet } from './useWallet'
 
-interface IAccountIdResult {
-  accountId: AccountId | null
+interface AccountIdResult {
+  accountId?: AccountId
   loading: boolean
 }
 
-export function useAccountId<TConnector extends HWBridgeConnector>(connector?: TConnector) {
+export function useAccountId<TConnector extends HWBridgeConnector>(connector?: TConnector | null) {
   const wallet = useWallet(connector)
-  const [accountIdResult, setAccountIdResult] = useState<IAccountIdResult>({
-    accountId: null,
-    loading: false,
-  })
+  const { accountIds, getAccountId } = useHWContext()
+  const [loading, setLoading] = useState<boolean>(false)
 
   useEffect(() => {
     ;(async () => {
-      if (!wallet.isConnected) return
-      const sessions = Array.isArray(wallet) ? wallet : [wallet]
-      const connectedSession = connector ? sessions.find((session) => session.isSessionFor(connector)) : sessions[0]
-
-      if (connectedSession && connectedSession.signer) {
-        const accountId = connectedSession.signer.getAccountId()
-        setAccountIdResult((prevState) => ({ ...prevState, accountId, loading: false }))
-        return
+      if (wallet.isConnected && !accountIds[wallet.sessionId]) {
+        try {
+          setLoading(true)
+          await getAccountId(wallet)
+        } catch (e) {
+          console.error('Unable lo load account id.', e)
+        } finally {
+          setLoading(false)
+        }
       }
-
-      setAccountIdResult((prevState) => ({ ...prevState, loading: false }))
     })()
-  }, [wallet.isConnected])
+  }, [wallet, wallet.isConnected, accountIds])
 
-  return useMemo(() => accountIdResult, [accountIdResult.accountId, accountIdResult.loading])
+  return useMemo(
+    () =>
+      ({
+        accountId: accountIds[wallet.sessionId],
+        loading,
+      } as AccountIdResult),
+    [accountIds, loading],
+  )
 }

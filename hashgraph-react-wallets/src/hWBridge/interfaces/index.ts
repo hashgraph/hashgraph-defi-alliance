@@ -1,1 +1,1 @@
-export {default as IConnector} from "./IConnector"
+export { default as IConnector } from './IConnector'

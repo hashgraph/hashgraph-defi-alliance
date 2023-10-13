@@ -1,48 +1,49 @@
 import { useEffect, useMemo, useState } from 'react'
 import { HWBridgeConnector } from '../hWBridge/connectors/types'
-import { useWallet } from './useWallet'
+import { useHWContext } from './useHWContext'
 import { AccountBalance } from '@hashgraph/sdk'
+import { useWallet } from './useWallet'
 
-interface IBalanceState {
-  balance: AccountBalance | null
+interface IBalanceResult {
   loading: boolean
-  shouldUpdate: boolean
+  balance: AccountBalance
+  updateBalance: () => void
 }
 
-export function useBalance<TConnector extends HWBridgeConnector>(connector?: TConnector) {
+export function useBalance<TConnector extends HWBridgeConnector>(connector?: TConnector | null) {
   const wallet = useWallet(connector)
-  const [accountBalance, setAccountBalance] = useState<IBalanceState>({
-    balance: null,
+  const { balances, getAccountBalance } = useHWContext()
+  const [state, setState] = useState<{ loading: boolean; shouldUpdate: boolean }>({
     loading: false,
-    shouldUpdate: true,
+    shouldUpdate: false,
   })
+
+  const handleUpdateBalance = () => {
+    setState((prevState) => ({ ...prevState, shouldUpdate: true }))
+  }
 
   useEffect(() => {
     ;(async () => {
-      if (!wallet.isConnected || !accountBalance.shouldUpdate) return
-      const sessions = Array.isArray(wallet) ? wallet : [wallet]
-      const connectedSession = connector ? sessions.find((session) => session.isSessionFor(connector)) : sessions[0]
-
-      if (connectedSession && connectedSession.signer) {
-        const accountBalance = await connectedSession.signer.getAccountBalance()
-        
-        const balance = accountBalance instanceof AccountBalance
-          ? accountBalance.toJSON()
-          : accountBalance;
-
-        setAccountBalance((prevState) => ({ ...prevState, balance, loading: false, shouldUpdate: false }))
-        return
+      if (wallet.isConnected && state.shouldUpdate) {
+        try {
+          setState((prevState) => ({ ...prevState, loading: true }))
+          await getAccountBalance(wallet)
+        } catch (e) {
+          console.error('Unable lo load account balance.', e)
+        } finally {
+          setState((prevState) => ({ ...prevState, loading: false, shouldUpdate: false }))
+        }
       }
-
-      setAccountBalance((prevState) => ({ ...prevState, loading: false }))
     })()
-  }, [wallet.isConnected, accountBalance.shouldUpdate])
+  }, [wallet, wallet.isConnected, balances, state.shouldUpdate])
 
   return useMemo(
-    () => ({
-      ...accountBalance,
-      updateBalance: () => setAccountBalance((prevState) => ({ ...prevState, shouldUpdate: true, loading: true })),
-    }),
-    [accountBalance.balance, accountBalance.loading],
+    () =>
+      ({
+        loading: state.loading,
+        balance: balances[wallet.sessionId],
+        updateBalance: handleUpdateBalance,
+      } as IBalanceResult),
+    [balances, state.loading],
   )
 }
