@@ -1,5 +1,8 @@
+export type * from './types'
 export * from './useHWBridge'
 export * from './useWallet'
 export * from './useConnectedWallets'
 export * from './useAccountId'
 export * from './useBalance'
+export * from './useWalletSDK'
+export * from './useCreateAuthToken'

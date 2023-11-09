@@ -11,7 +11,7 @@ class BladeWalletConnector implements IConnector {
   private readonly _network: HederaNetwork
   private readonly _metadata: HWBridgeDAppMetadata
   private readonly _debug: boolean
-  private _bladeConnector: BladeConnector | null
+  private _bladeConnector: BladeConnector | null = null
 
   constructor({ network, metadata, debug = false }: HWBConnectorProps) {
     this._network = network
@@ -161,6 +161,10 @@ class BladeWalletConnector implements IConnector {
       console.error(e)
       return false
     }
+  }
+
+  getSdk(): BladeConnector | null {
+    return this._bladeConnector as BladeConnector | null
   }
 }
 

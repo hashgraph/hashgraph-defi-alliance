@@ -193,6 +193,10 @@ class HashpackWalletConnector implements IConnector {
       return false
     }
   }
+
+  getSdk(): HashConnect | null {
+    return this._hashconnect as HashConnect | null
+  }
 }
 
 export default HashpackWalletConnector

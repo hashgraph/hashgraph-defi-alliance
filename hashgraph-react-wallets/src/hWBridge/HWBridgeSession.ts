@@ -1,5 +1,5 @@
 import { HWBridgeConnectorInstance } from './connectors/types'
-import { HWBridgeSessionProps, HWBridgeSigner } from './types'
+import { ConnectionConfig, HWBridgeSessionProps, HWBridgeSigner } from './types'
 import short from 'short-uuid'
 
 export class HWBridgeSession {
@@ -9,15 +9,17 @@ export class HWBridgeSession {
   #onUpdate: (session?: HWBridgeSession | null) => void
   #isConnected: boolean = false
   #isInitialized: boolean = false
+  #isLoading: boolean = false
   #extensionReady: boolean = false
   #autoPaired: boolean = false
 
-  constructor({ Connector, onUpdate, network, metadata, debug }: HWBridgeSessionProps) {
+  constructor({ Connector, onUpdate, network, metadata, debug, config }: HWBridgeSessionProps) {
     this.#sessionId = short.generate()
     this.#connector = new Connector({
       network,
       metadata,
       debug,
+      config,
       onAutoPairing: this.#_onAutoPairing.bind(this),
     })
 
@@ -38,31 +40,37 @@ export class HWBridgeSession {
   #_onAutoPairing(signer: HWBridgeSigner): void {
     this.#signer = signer
     this.#isConnected = !!signer
-    this.#autoPaired = true;
+    this.#autoPaired = true
     this.#onUpdate(this)
   }
 
-  async connect(): Promise<HWBridgeSession> {
-    this.#signer = await this.#connector?.newConnection()
+  async connect(props?: Partial<ConnectionConfig>): Promise<HWBridgeSession> {
+    this.#isLoading = true
+    this.#signer = await this.#connector?.newConnection(props as ConnectionConfig)
     this.#isConnected = !!this.#signer
+    this.#isLoading = false
     this.#onUpdate(this)
 
     return this
   }
 
   async disconnect(): Promise<boolean> {
+    this.#isLoading = true
     this.#isConnected = !(await this.#connector?.wipePairingData())
     this.setSigner(null)
+    this.#isLoading = false
     this.#onUpdate()
 
     return true
   }
 
   async #_initSession(): Promise<HWBridgeSession> {
+    this.#isLoading = true
     this.#extensionReady = await this.#checkExtensionPresence()
     this.#signer = await this.#connector?.getConnection()
     this.#isInitialized = true
     this.#isConnected = !!this.#signer
+    this.#isLoading = false
     this.#onUpdate(this.#signer && this)
 
     return this
@@ -84,12 +92,20 @@ export class HWBridgeSession {
     return this.#isInitialized
   }
 
+  get isLoading(): boolean {
+    return this.#isLoading
+  }
+
   get isConnected(): boolean {
     return this.#isConnected
   }
 
   get connector(): HWBridgeConnectorInstance {
     return this.#connector
+  }
+
+  get sdk() {
+    return this.#connector.getSdk()
   }
 
   get signer(): HWBridgeSigner | null {

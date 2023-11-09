@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { HWBridgeConnector } from '../hWBridge/connectors/types'
 import { useHWContext } from './useHWContext'
-import { AccountBalance } from '@hashgraph/sdk'
+import { AccountBalanceJson } from '@hashgraph/sdk'
 import { useWallet } from './useWallet'
 
 interface IBalanceResult {
   loading: boolean
-  balance: AccountBalance
+  balance: AccountBalanceJson
   updateBalance: () => void
 }
 

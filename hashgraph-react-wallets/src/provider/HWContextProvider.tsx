@@ -6,7 +6,7 @@ import { HWBridgeSession } from '../hWBridge'
 
 export interface HWContext {
   accountIds: { [sessionId: string]: AccountId }
-  balances: { [sessionId: string]: AccountBalance }
+  balances: { [sessionId: string]: AccountBalanceJson }
   getAccountId: <TSession extends HWBridgeSession>(wallet: TSession | null) => Promise<AccountId | null>
   getAccountBalance: <TSession extends HWBridgeSession>(wallet: TSession | null) => Promise<AccountBalanceJson | null>
 }
@@ -75,7 +75,15 @@ const HWContextProvider = ({ children }: { children: ReactNode | ReactNode[] }) 
 
   useEffect(() => {
     ;(async () => {
-      if (!wallets.length) return
+      if (!wallets.length) {
+        setContext((prevContext) => ({
+          ...prevContext,
+          accountIds: {},
+          balances: {},
+        }))
+
+        return
+      }
 
       wallets.map(async (wallet) => {
         const accountId = await handleGetAccountId(wallet)

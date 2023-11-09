@@ -7,6 +7,7 @@ import {
   HWBridgeProps,
   HWBridgeDAppMetadata,
   HWBridgeConnector,
+  ConnectorConfig,
 } from '../hWBridge/types'
 import { HWBridgeSession } from '../hWBridge/HWBridgeSession'
 import HWContextProvider from './HWContextProvider'
@@ -16,7 +17,7 @@ interface IProps {
   network: HederaNetwork
   metadata: HWBridgeDAppMetadata
   defaultConnector?: HWBridgeConnector
-  connectors: HWBridgeConnector[]
+  connectors: (HWBridgeConnector | [HWBridgeConnector, ConnectorConfig])[]
   multiSession?: boolean
   debug?: boolean
 }
