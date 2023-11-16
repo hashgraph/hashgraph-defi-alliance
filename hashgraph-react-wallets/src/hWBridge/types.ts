@@ -31,3 +31,4 @@ export type HWBridgeInstance = InstanceType<typeof HWBridge>
 
 export * from './interfaces/IConnector'
 export * from './connectors/types'
+export * from './hnsResolvers/types'

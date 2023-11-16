@@ -1,4 +1,5 @@
-import { ConnectionConfig } from '../types'
+import { AccountId } from '@hashgraph/sdk'
+import { ConnectionConfig, ConnectorConfig, HNSResult } from '../types'
 
 interface IConnector {
   getConnection(): void
@@ -11,7 +12,11 @@ interface IConnector {
 
   wipePairingData(): Promise<boolean>
 
-  getSdk(): any
+  resolveHNS(accountId: AccountId): Promise<HNSResult | null>
+
+  get sdk(): any
+
+  get config(): ConnectorConfig
 }
 
 export default IConnector

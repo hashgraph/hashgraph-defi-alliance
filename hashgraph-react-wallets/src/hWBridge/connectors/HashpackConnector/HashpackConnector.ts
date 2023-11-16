@@ -1,24 +1,32 @@
-import { Client, Executable, PublicKey, Transaction } from '@hashgraph/sdk'
+import { AccountId, Client, Executable, PublicKey, Transaction } from '@hashgraph/sdk'
 import { HashConnect, HashConnectTypes, MessageTypes } from 'hashconnect'
 import { getBytesOf } from '../../Utils'
 import { HashConnectWallet } from './types'
-import { HWBridgeDAppMetadata, HederaNetwork } from '../../types'
-import { IConnector } from '../../interfaces'
+import { HNSResult, HederaNetwork } from '../../types'
 import { HashConnectProvider } from 'hashconnect/dist/esm/provider/provider'
 import { HWBConnectorProps } from '../types'
 import { HP_APP_METADATA_STORAGE_KEY, HP_INNER_STORAGE_KEY, HP_WAIT_FOR_EXTENSION_RESPONSE_TIMEOUT } from './constants'
+import HashpackIconWhite from '../../../assets/hashpack-icon.png'
+import HashpackIconDark from '../../../assets/hashpack-icon-dark.png'
+import BaseConnector from '../BaseConnector'
+import { HashpackHNSResolver } from '../../hnsResolvers'
 
-class HashpackWalletConnector implements IConnector {
-  private readonly _network: HederaNetwork
-  private readonly _metadata: HWBridgeDAppMetadata
-  private readonly _debug: boolean
+class HashpackWalletConnector extends BaseConnector {
   private readonly _onAutoPairing?: (signer: HashConnectWallet) => void
   private _hashconnect: HashConnect | null = null
 
-  constructor({ network, metadata, debug = false, onAutoPairing }: HWBConnectorProps) {
-    this._network = network
-    this._metadata = metadata
-    this._debug = debug
+  constructor({ network, metadata, config, debug, onAutoPairing }: HWBConnectorProps) {
+    super({ network, metadata, config, debug })
+
+    this._config = {
+      icons: {
+        white: HashpackIconWhite,
+        dark: HashpackIconDark,
+        ...config?.icons,
+      },
+      ...config,
+    }
+
     this._onAutoPairing = onAutoPairing
     this._initHashConnect(true)
   }
@@ -194,7 +202,12 @@ class HashpackWalletConnector implements IConnector {
     }
   }
 
-  getSdk(): HashConnect | null {
+  async resolveHNS(accountId: AccountId): Promise<HNSResult | null> {
+    const hnsResolver = new HashpackHNSResolver({ network: this._network })
+    return await hnsResolver.get(accountId)
+  }
+
+  get sdk(): HashConnect | null {
     return this._hashconnect as HashConnect | null
   }
 }

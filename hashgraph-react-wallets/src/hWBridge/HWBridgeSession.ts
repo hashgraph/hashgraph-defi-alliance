@@ -46,8 +46,11 @@ export class HWBridgeSession {
 
   async connect(props?: Partial<ConnectionConfig>): Promise<HWBridgeSession> {
     this.#isLoading = true
+    this.#onUpdate(this)
+
     this.#signer = await this.#connector?.newConnection(props as ConnectionConfig)
     this.#isConnected = !!this.#signer
+
     this.#isLoading = false
     this.#onUpdate(this)
 
@@ -56,8 +59,11 @@ export class HWBridgeSession {
 
   async disconnect(): Promise<boolean> {
     this.#isLoading = true
+    this.#onUpdate()
+
     this.#isConnected = !(await this.#connector?.wipePairingData())
     this.setSigner(null)
+
     this.#isLoading = false
     this.#onUpdate()
 
@@ -66,11 +72,14 @@ export class HWBridgeSession {
 
   async #_initSession(): Promise<HWBridgeSession> {
     this.#isLoading = true
+    this.#onUpdate()
+
     this.#extensionReady = await this.#checkExtensionPresence()
     this.#signer = await this.#connector?.getConnection()
     this.#isInitialized = true
     this.#isConnected = !!this.#signer
     this.#isLoading = false
+
     this.#onUpdate(this.#signer && this)
 
     return this
@@ -105,7 +114,7 @@ export class HWBridgeSession {
   }
 
   get sdk() {
-    return this.#connector.getSdk()
+    return this.#connector.sdk
   }
 
   get signer(): HWBridgeSigner | null {

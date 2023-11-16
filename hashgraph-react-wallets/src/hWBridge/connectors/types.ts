@@ -1,6 +1,6 @@
 import { HashpackConnector } from './HashpackConnector'
 import { BladeConnector } from './BladeConnector'
-import { HWBridgeDAppMetadata, HWBridgeSigner, HederaNetwork, MagicConfig } from '../types'
+import { HNSResolver, HWBridgeDAppMetadata, HWBridgeSigner, HederaNetwork, MagicConfig } from '../types'
 import { MagicConnector } from './MagicConnector'
 import { SDKBase, InstanceWithExtensions } from '@magic-sdk/provider'
 import { HederaExtension } from '@magic-ext/hedera'
@@ -11,7 +11,13 @@ export type HWBridgeConnectorInstance = InstanceType<
   typeof HashpackConnector | typeof BladeConnector | typeof MagicConnector
 >
 
-export type ConnectorConfig = MagicConfig
+export type ConnectorConfig = {
+  icons?: {
+    white?: string
+    dark?: string
+  }
+  hnsResolver?: HNSResolver
+} & MagicConfig
 
 export type HWBConnectorProps = {
   network: HederaNetwork

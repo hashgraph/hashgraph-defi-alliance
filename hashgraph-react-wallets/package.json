@@ -20,12 +20,17 @@
     "./connectors": {
       "types": "./lib/types/hWBridge/connectors/index.d.ts",
       "default": "./lib/hWBridge/connectors/index.js"
+    },
+    "./hns-resolvers": {
+      "types": "./lib/types/hWBridge/hnsResolvers/index.d.ts",
+      "default": "./lib/hWBridge/hnsResolvers/index.js"
     }
   },
   "scripts": {
-    "build": "run-s clean build:esm build:declarations",
+    "build": "run-s clean build:esm build:declarations copy-assets",
     "build:declarations": "tsc",
     "build:esm": "babel src --extensions .ts,.tsx --out-dir lib --source-maps",
+    "copy-assets": "copyfiles -f src/assets/* lib/assets",
     "clean": "rimraf lib",
     "lint": "eslint \"{**/*,*}.{js,ts,jsx,tsx}\"",
     "prettier": "prettier --write \"{src,tests,example/src}/**/*.{js,ts,jsx,tsx}\"",
@@ -48,6 +53,7 @@
     "@typescript-eslint/eslint-plugin": "^5.59.6",
     "@typescript-eslint/parser": "^5.59.6",
     "babel-plugin-add-import-extension": "^1.6.0",
+    "copyfiles": "^2.4.1",
     "eslint": "^8.40.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^4.2.1",
@@ -72,7 +78,7 @@
     "react-dom": "^18.2.0"
   },
   "dependencies": {
-    "@bladelabs/blade-web3.js": "^1.0.5",
+    "@bladelabs/blade-web3.js": "^1.2.1",
     "@magic-ext/hedera": "^1.0.2",
     "@magic-ext/oauth": "^15.2.0",
     "hashconnect": "^0.2.4",

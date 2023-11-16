@@ -2,24 +2,29 @@ import { Magic } from 'magic-sdk'
 import { SDKBase, InstanceWithExtensions } from '@magic-sdk/provider'
 import { HederaExtension } from '@magic-ext/hedera'
 import { OAuthExtension } from '@magic-ext/oauth'
-import { MagicWallet } from './MagicWallet.js'
-import { MagicProvider } from './MagicProvider.js'
-import IConnector from '../../interfaces/IConnector.js'
-import { HWBConnectorProps } from '../types.js'
-import { HederaNetwork } from '../../types.js'
-import { MagicConfig, MagicLoginConfig } from './types.js'
-import { LoginModules } from './constants.js'
+import { MagicWallet } from './MagicWallet'
+import { MagicProvider } from './MagicProvider'
+import { HWBConnectorProps } from '../types'
+import { MagicLoginConfig } from './types'
+import { LoginModules } from './constants'
+import MagicIconWhite from '../../../assets/magic-icon.png'
+import MagicIconDark from '../../../assets/magic-icon-dark.png'
+import BaseConnector from '../BaseConnector'
 
-class MagicConnector implements IConnector {
-  private readonly _network: HederaNetwork
-  private readonly _config: MagicConfig
-  private readonly _debug: boolean
+class MagicConnector extends BaseConnector {
   private readonly _magic: InstanceWithExtensions<SDKBase, HederaExtension[] | OAuthExtension[]>
 
-  constructor({ network, config, debug = false }: HWBConnectorProps) {
-    this._network = network
-    this._config = config as MagicConfig
-    this._debug = debug || false
+  constructor({ network, metadata, config, debug = false }: HWBConnectorProps) {
+    super({ network, metadata, config, debug })
+
+    this._config = {
+      icons: {
+        white: MagicIconWhite,
+        dark: MagicIconDark,
+        ...config?.icons,
+      },
+      ...config,
+    }
 
     if (!this._config?.publicApiKey) throw new Error('`publicApiKey` is missing from MagicConnector config')
 
@@ -88,11 +93,6 @@ class MagicConnector implements IConnector {
     })
   }
 
-  async checkExtensionPresence(): Promise<boolean> {
-    if (this._debug) console.log('[Magic Connector]: Returning the magic instance presence')
-    return !!this._magic
-  }
-
   async isWalletStateAvailable(): Promise<boolean> {
     return await this._magic.user.isLoggedIn()
   }
@@ -107,7 +107,7 @@ class MagicConnector implements IConnector {
     }
   }
 
-  getSdk(): Magic | InstanceWithExtensions<SDKBase, HederaExtension[]> {
+  get sdk(): Magic | InstanceWithExtensions<SDKBase, HederaExtension[]> {
     return this._magic as Magic | InstanceWithExtensions<SDKBase, HederaExtension[]>
   }
 }

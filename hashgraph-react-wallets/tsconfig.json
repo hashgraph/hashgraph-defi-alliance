@@ -12,6 +12,10 @@
     "declaration": true,
     "declarationMap": true,
     "emitDeclarationOnly": true,
+    "typeRoots": [
+      "node_modules/@types",
+      "src/images.d.ts"
+    ],
     "declarationDir": "lib/types",
     "moduleResolution": "node",
     "noUnusedLocals": true,

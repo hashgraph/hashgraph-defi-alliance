@@ -16,7 +16,7 @@ export function useAccountId<TConnector extends HWBridgeConnector>(connector?: T
 
   useEffect(() => {
     ;(async () => {
-      if (wallet.isConnected && !accountIds[wallet.sessionId]) {
+      if (wallet.isConnected && !accountIds.hasOwnProperty(wallet.sessionId)) {
         try {
           setLoading(true)
           await getAccountId(wallet)
