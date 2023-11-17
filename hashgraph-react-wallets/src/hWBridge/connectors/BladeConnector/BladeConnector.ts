@@ -1,6 +1,10 @@
 import { BladeConnector, ConnectorStrategy, BladeWalletError, SessionParams } from '@bladelabs/blade-web3.js'
 import { DAppMetadata } from '@hashgraph/hedera-wallet-connect'
-import { BLADE_STORAGE_KEY } from './constants'
+import { 
+  BLADE_EXTENSION_POLLING_ATTEMPTS, 
+  BLADE_EXTENSION_POLLING_INTERVAL,
+   BLADE_STORAGE_KEY 
+} from './constants'
 import { BladeWallet } from './types'
 import { HWBConnectorProps } from '../types'
 import { TransactionReceiptQuery } from '@hashgraph/sdk'
@@ -89,6 +93,33 @@ class BladeWalletConnector extends BaseConnector {
     if (this._debug) console.log('[Blade Connector]: Trying to create a new connection')
     return new Promise<BladeWallet | null>(async (resolve) => {
       this._tryConnectBlade().then((signer) => resolve(signer as BladeWallet))
+    })
+  }
+
+  async checkExtensionPresence(maxAttempts = BLADE_EXTENSION_POLLING_ATTEMPTS): Promise<boolean> {
+    let pollingInterval: ReturnType<typeof setInterval>
+    let attempts = maxAttempts - 1
+
+    return new Promise((resolve) => {
+      pollingInterval = setInterval(() => {
+        const isExtensionPresent = !!window.bladeConnect
+        if (this._debug)
+          console.log('[Blade Connector]: Polling blade wallet extension. Remaining attempts:', attempts + 1)
+
+        if (isExtensionPresent) {
+          if (this._debug) console.log('[Blade Connector]: Blade wallet extension found')
+          clearInterval(pollingInterval)
+          resolve(true)
+        }
+
+        if (attempts === 0 && !isExtensionPresent) {
+          if (this._debug) console.log('[Blade Connector]: Could not find blade wallet extension')
+          clearInterval(pollingInterval)
+          resolve(false)
+        }
+
+        attempts--
+      }, BLADE_EXTENSION_POLLING_INTERVAL)
     })
   }
 

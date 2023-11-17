@@ -1,1 +1,3 @@
 export const BLADE_STORAGE_KEY = 'bladeWalletData'
+export const BLADE_EXTENSION_POLLING_ATTEMPTS = 5
+export const BLADE_EXTENSION_POLLING_INTERVAL = 1000

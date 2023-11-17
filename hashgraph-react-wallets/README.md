@@ -1,7 +1,7 @@
 # Getting started
 Welcome to the _Hashgraph React Wallets_ project, a lightweight library that aims to provide an easier way to interact with the [hedera network](https://hedera.com/) from a UI perspective.
 
-**How? You might ask.** Easy ... by bundling the UI functionality of 2 of the most popular wallets on the hashgraph chain, [HashPack](https://www.hashpack.app/) and [Blade](https://www.bladewallet.io/), into a set of React components, ready for easy consumption. 
+**How? You might ask.** Easy ... by bundling the UI functionality of 2 of the most popular wallets on the hashgraph chain, [HashPack](https://www.hashpack.app/), [Blade](https://www.bladewallet.io/) and [MagicLink](https://magic.link/), into a set of React components, ready for easy consumption. 
 
 ## Usage 
 The following is a quick code snippet showing the simplicity of using our `HWBridgeProvider` React component. You just need to define your dApp `metadata` and choose your wallet-connectors and you're good to go.
@@ -9,7 +9,11 @@ The following is a quick code snippet showing the simplicity of using our `HWBri
 
 ```jsx
 import { HWBridgeProvider } from "@buidlerlabs/hashgraph-react-wallets";
-import { HashpackConnector, BladeConnector } from "@buidlerlabs/hashgraph-react-wallets/connectors";
+import { 
+    HashpackConnector, 
+    BladeConnector, 
+    MagicConnector 
+} from "@buidlerlabs/hashgraph-react-wallets/connectors";
 import DAppLogo from "./assets/dapp-logo.svg";
 
 const metadata = {
@@ -23,7 +27,11 @@ function App() {
   return <HWBridgeProvider 
     network="testnet"
     metadata={metadata}
-    connectors={[HashpackConnector, BladeConnector]}
+    connectors={[
+        HashpackConnector, 
+        BladeConnector, 
+        [MagicConnector, {publicApiKey: 'xxxxx'}]
+    ]}
     multiSession={false}>
         {children}
   </HWBridgeProvider>
@@ -34,12 +42,14 @@ export default App
 
 Following is the full list of props (along with their default values) available for `HWBridgeProvider`:
 
+<br/>
+
 | prop             | description                                                                                                                 | required |
 |------------------|-----------------------------------------------------------------------------------------------------------------------------|----------|
 | network          | the targeted network which can be either `testnet` (default) or `mainnet`                                                   | Yes      |
 | metadata         | an object describing the dApp to the user                                                                                   | Yes      |
-| defaultConnector | default to use when no connector is specified when using the provided hooks. Can be either `HashpackConnector` or `BladeConnector` or, when left empty, it will pick the first one available | No      |
-| connectors       | wallet connectors to use for session interactions. It's an array of `HashpackConnector`/ `BladeConnector`s. Default is `[]` | Yes      |
+| defaultConnector | default to use when no connector is specified when using the provided hooks. Can be either `HashpackConnector`, `BladeConnector`, `MagicConnector` or, when left empty, it will pick the first one available | No      |
+| connectors       | wallet connectors to use for session interactions. It's an array of connectors (`HashpackConnector` / `BladeConnector` / `MagicConnector`). Default is `[]`. </br><br/> Each connector can get its own config by passing it as an array where the first index represent the connector class, and the second index its own config  (e.g `connectors={[ HashpackConnector, [MagicConnector, {publicApiKey: xxxxx}] ]}`) | Yes      |
 | multiSession     | `true` if you're planning to allow sessions to be created on both wallets and `false` (default)otherwise                    | No       |
 | debug            | set this to `true` to get logs of various kinds (default: `false`)                                                          | No       |
 
@@ -191,10 +201,14 @@ The returned type has the following signature:
     connect: async () => Promise<HWBridgeSession>
     disconnect: async () => Promise<boolean>
     connector: HWBridgeConnector
+    sessionId: string
     extensionReady: boolean
     isConnected: boolean
     isInitialized: boolean
+    isLoading: boolean
+    sdk: WalletSDKType
     signer: HWBridgeSigner
+    autoPaired: boolean
 } as HWBridgeSession | {}
 ```
 ---
@@ -336,4 +350,135 @@ the returned object adheres to the following signature:
     accountId: AccountId
     loading: boolean
 }
+```
+
+---
+
+### useHNS()
+
+Use this hook to display your wallet HNS name.
+
+You gain access to it like so
+```jsx
+import { useHNS } from "@buidlerlabs/hashgraph-react-wallets"
+```
+then you would normally use it in the following way:
+```jsx
+import { useAccountId } from "@buidlerlabs/hashgraph-react-wallets"
+import { useHNS } from "@buidlerlabs/hashgraph-react-wallets"
+import { HashpackConnector } from "@buidlerlabs/hashgraph-react-wallets/connectors"
+
+const App = () => {
+    const {accountId, loading} = useAccountId(HashpackConnector);
+    const {hnsName} = useHNS(HashpackConnector);
+
+    return <>
+        {
+            loading
+                ? 'Fetching...'
+                : <span>Account: {hnsName ?? accountId}</span>
+        }
+    </>
+}
+```
+
+If `HWBridgeProvider` was configured with either `multiSession` set to `false` or `defaultConnector` set to a _non empty_ value, the hook can be used without any arguments. <br/>
+In this case, it will return the default specified wallet HNSResult, or the unique connected wallet HNSResult:
+
+
+```jsx
+import { useHNS } from "@buidlerlabs/hashgraph-react-wallets"
+
+const App = () => {
+    const {hnsName, avatar, tokenId, serial} = useHNS();
+
+    return ...
+}
+```
+
+In some situations we might want to use a different HNS resolver for a connector, and this is possible by passing a custom resolver along a connector config:
+
+```jsx
+import { HWBridgeProvider } from "@buidlerlabs/hashgraph-react-wallets";
+import { 
+    HashpackConnector, 
+    BladeConnector, 
+    MagicConnector 
+} from "@buidlerlabs/hashgraph-react-wallets/connectors";
+import { HashpackHNSResolver } from "@buidlerlabs/hashgraph-react-wallets/hns-resolvers";
+import DAppLogo from "./assets/dapp-logo.svg";
+
+const metadata = {
+    description: "Hashgraph React Wallets Demo",
+    icons: [DAppLogo],
+    name: "Hashgraph Wallets Demo",
+    url: location.href
+};
+
+function App() {
+  return <HWBridgeProvider 
+    network="testnet"
+    metadata={metadata}
+    connectors={[
+        HashpackConnector, 
+        [BladeConnector, {hnsResolver: HashpackHNSResolver}]
+        [MagicConnector, {publicApiKey: "xxxxx"}]
+    ]}
+    multiSession={false}>
+        {children}
+  </HWBridgeProvider>
+}
+
+export default App
+```
+
+the returned object adheres to the following signature:
+```tsx
+IHNSNameResult {
+  loading: boolean  
+  hnsName: string
+  avatar: string
+  tokenId: string
+  serial: number
+}
+```
+
+---
+
+### useWalletSDK()
+
+Use this hook to use your wallet sdk.
+
+You gain access to it like so
+```jsx
+import { useWalletSDK } from "@buidlerlabs/hashgraph-react-wallets"
+```
+then you would normally use it in the following way:
+```jsx
+import { useState, useEffect } from "react"
+import { useWalletSDK, MagicSDK } from "@buidlerlabs/hashgraph-react-wallets"
+import { MagicConnector } from "@buidlerlabs/hashgraph-react-wallets/connectors"
+
+const App = () => {
+    const sdk = useWalletSDK<MagicSDK>(MagicConnector);
+    const [idToken, setIdToken] = useState();
+    
+    useEffect(() => {
+        const idToken = await sdk.user.getIdToken();
+        setIdToken(idToken);
+    }, [])
+
+    return <>
+        {
+            loading
+                ? 'Fetching idToken...'
+                : <span>ID Token: {idToken}</span>
+        }
+    </>
+}
+```
+
+the returned object adheres to the following signature:
+```tsx
+type ConnectorSDKs = HashConnectSDK | BladeSDK | MagicSDK
 ```

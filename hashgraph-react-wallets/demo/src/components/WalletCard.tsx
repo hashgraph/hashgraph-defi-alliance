@@ -31,7 +31,7 @@ const WalletCard = ({ name, iconSrc, connector }: IProps) => {
 
     const connectButton = isConnected
         ? <Button className="enabled:bg-red-500 enabled:hover:bg-red-600" onClick={handleDisconnect}>Disconnect</Button>
-        : <Button onClick={handleConnect} disabled={!extensionReady}>{loading ? 'Loading...' : 'Connect'}</Button>
+        : <Button onClick={handleConnect}>{loading ? 'Connecting...' : 'Connect'}</Button>
 
     return <div className="border rounded-md border-white/20 flex flex-col items-center gap-2 p-8 backdrop-blur-[10px] bg-white/10 min-w-[18rem]">
         <div className="max-w-[2rem]">
