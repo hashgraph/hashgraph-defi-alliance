@@ -36,6 +36,10 @@ abstract class BaseConnector implements IConnector {
     return null
   }
 
+  get isExtensionRequired() {
+    return true
+  }
+
   get config(): ConnectorConfig {
     return this._config
   }

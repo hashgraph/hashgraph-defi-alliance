@@ -14,6 +14,8 @@ interface IConnector {
 
   resolveHNS(accountId: AccountId): Promise<HNSResult | null>
 
+  get isExtensionRequired(): boolean
+
   get sdk(): any
 
   get config(): ConnectorConfig

@@ -2,8 +2,8 @@ import { BladeConnector, ConnectorStrategy, BladeWalletError, SessionParams } fr
 import { DAppMetadata } from '@hashgraph/hedera-wallet-connect'
 import { 
   BLADE_EXTENSION_POLLING_ATTEMPTS, 
-  BLADE_EXTENSION_POLLING_INTERVAL,
-   BLADE_STORAGE_KEY 
+  BLADE_EXTENSION_POLLING_INTERVAL, 
+  BLADE_STORAGE_KEY
 } from './constants'
 import { BladeWallet } from './types'
 import { HWBConnectorProps } from '../types'
@@ -14,9 +14,11 @@ import BaseConnector from '../BaseConnector'
 
 class BladeWalletConnector extends BaseConnector {
   private _blade: BladeConnector | null = null
+  private _connectorStrategy: ConnectorStrategy
 
   constructor({ network, metadata, config, debug }: HWBConnectorProps) {
     super({ network, metadata, config, debug })
+    this._connectorStrategy = ConnectorStrategy.AUTO
     this._config = {
       icons: {
         white: BladeLogoWhite,
@@ -32,7 +34,7 @@ class BladeWalletConnector extends BaseConnector {
 
     try {
       const bladeMetadata = Object.keys(this._metadata || {}).length > 0 ? (this._metadata as DAppMetadata) : undefined
-      this._blade = await BladeConnector.init(ConnectorStrategy.AUTO, bladeMetadata)
+      this._blade = await BladeConnector.init(this._connectorStrategy, bladeMetadata)
 
       if (this._debug)
         console.log(
@@ -148,6 +150,10 @@ class BladeWalletConnector extends BaseConnector {
       console.error(e)
       return false
     }
+  }
+
+  get isExtensionRequired() {
+    return this._connectorStrategy === ConnectorStrategy.EXTENSION
   }
 
   get sdk(): BladeConnector | null {

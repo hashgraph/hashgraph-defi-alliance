@@ -116,29 +116,41 @@ const HWContextProvider = ({ children }: { children: ReactNode | ReactNode[] }) 
       }
 
       wallets.map(async (wallet) => {
-        const accountId = await handleGetAccountId(wallet, true)
-        const hnsResult = await handleGetHNSName(wallet, true)
-        const balance = await handleGetBalance(wallet, true)
+        try {
+          const accountId = await handleGetAccountId(wallet, true)
+          const hnsResult = await handleGetHNSName(wallet, true)
+          const balance = await handleGetBalance(wallet, true)
 
-        setContext(
-          (prevContext) =>
-            ({
-              ...prevContext,
-              accountIds: {
-                ...prevContext?.accountIds,
-                [wallet.sessionId]: accountId,
-              },
-              hns: {
-                ...prevContext?.hns,
-                [wallet.sessionId]: hnsResult,
-              },
-              balances: {
-                ...prevContext?.balances,
-                [wallet.sessionId]: balance,
-              },
-              ready: true,
-            } as HWContext),
-        )
+          setContext(
+            (prevContext) =>
+              ({
+                ...prevContext,
+                accountIds: {
+                  ...prevContext?.accountIds,
+                  [wallet.sessionId]: accountId,
+                },
+                hns: {
+                  ...prevContext?.hns,
+                  [wallet.sessionId]: hnsResult,
+                },
+                balances: {
+                  ...prevContext?.balances,
+                  [wallet.sessionId]: balance,
+                },
+                ready: true,
+              } as HWContext),
+          )
+        } catch (e) {
+          console.error('Failed to load the initial context', e)
+
+          setContext(
+            (prevContext) =>
+              ({
+                ...prevContext,
+                ready: true,
+              } as HWContext),
+          )
+        }
       })
     })()
   }, [connectedSessionIDs])

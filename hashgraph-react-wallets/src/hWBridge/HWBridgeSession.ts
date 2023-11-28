@@ -74,7 +74,7 @@ export class HWBridgeSession {
     this.#isLoading = true
     this.#onUpdate()
 
-    this.#extensionReady = await this.#checkExtensionPresence()
+    this.#extensionReady = await this.#connector?.checkExtensionPresence()
     this.#signer = await this.#connector?.getConnection()
     this.#isInitialized = true
     this.#isConnected = !!this.#signer
@@ -85,16 +85,16 @@ export class HWBridgeSession {
     return this
   }
 
-  async #checkExtensionPresence(): Promise<boolean> {
-    return await this.#connector?.checkExtensionPresence()
-  }
-
   get sessionId(): string {
     return this.#sessionId
   }
 
   get extensionReady(): boolean {
     return this.#extensionReady
+  }
+
+  get isExtensionRequired(): boolean {
+    return this.#connector.isExtensionRequired
   }
 
   get isInitialized(): boolean {
