@@ -1,0 +1,1 @@
+export { HashpackHNSResolver } from './hashpack'

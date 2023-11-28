@@ -1,3 +1,3 @@
-export const ON_SESSION_CHANGE_EVENT = '__TRANSACTION_ON_RECEIPT_EVENT_NAME__'
+export const ON_SESSION_CHANGE_EVENT = '__ON_SESSION_CHANGE_EVENT__'
 
 export { Subscription as default } from './Subscription'

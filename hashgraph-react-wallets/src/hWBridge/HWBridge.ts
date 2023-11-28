@@ -1,5 +1,5 @@
 import { HederaNetwork, HWBridgeDAppMetadata, HWBridgeProps, HWBridgeSessionProps } from './types'
-import { HWBridgeConnector } from './connectors/types'
+import { ConnectorConfig, HWBridgeConnector } from './connectors/types'
 import { HWBridgeSession } from './HWBridgeSession'
 import { EventEmitter } from 'events'
 import Subscription, { ON_SESSION_CHANGE_EVENT } from './events'
@@ -30,15 +30,18 @@ class HWBridge {
     this.#sessions = this.#initSessions(connectors) || []
   }
 
-  #initSessions(_connectors: HWBridgeConnector[]) {
+  #initSessions(_connectors: (HWBridgeConnector | [HWBridgeConnector, ConnectorConfig])[]) {
     if (Array.isArray(_connectors) && _connectors.length > 0) {
       return _connectors
-        .map((Connector: HWBridgeConnector) => {
+        .map((ConectorType: HWBridgeConnector | [HWBridgeConnector, any]) => {
+          const [Connector, config] = Array.isArray(ConectorType) ? ConectorType : [ConectorType]
+
           return new HWBridgeSession({
             Connector: Connector,
             network: this.#network,
             metadata: this.#metadata,
             debug: this.debug,
+            config,
             onUpdate: this.#updateBridge.bind(this),
           } as HWBridgeSessionProps)
         })

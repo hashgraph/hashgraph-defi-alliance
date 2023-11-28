@@ -1,22 +1,32 @@
-import { IConnector } from '../../interfaces'
-import { HWBridgeDAppMetadata, HederaNetwork } from '../../types'
 import { BladeConnector, ConnectorStrategy, BladeWalletError, SessionParams } from '@bladelabs/blade-web3.js'
 import { DAppMetadata } from '@hashgraph/hedera-wallet-connect'
-import { BLADE_EXTENSION_POLLING_ATTEMPTS, BLADE_EXTENSION_POLLING_INTERVAL, BLADE_STORAGE_KEY } from './constants'
+import { 
+  BLADE_EXTENSION_POLLING_ATTEMPTS, 
+  BLADE_EXTENSION_POLLING_INTERVAL, 
+  BLADE_STORAGE_KEY
+} from './constants'
 import { BladeWallet } from './types'
 import { HWBConnectorProps } from '../types'
 import { TransactionReceiptQuery } from '@hashgraph/sdk'
+import BladeLogoWhite from '../../../assets/blade-icon.png'
+import BladeLogoDark from '../../../assets/blade-icon-dark.png'
+import BaseConnector from '../BaseConnector'
 
-class BladeWalletConnector implements IConnector {
-  private readonly _network: HederaNetwork
-  private readonly _metadata: HWBridgeDAppMetadata
-  private readonly _debug: boolean
-  private _bladeConnector: BladeConnector | null
+class BladeWalletConnector extends BaseConnector {
+  private _blade: BladeConnector | null = null
+  private _connectorStrategy: ConnectorStrategy
 
-  constructor({ network, metadata, debug = false }: HWBConnectorProps) {
-    this._network = network
-    this._metadata = metadata
-    this._debug = debug || false
+  constructor({ network, metadata, config, debug }: HWBConnectorProps) {
+    super({ network, metadata, config, debug })
+    this._connectorStrategy = ConnectorStrategy.AUTO
+    this._config = {
+      icons: {
+        white: BladeLogoWhite,
+        dark: BladeLogoDark,
+        ...config?.icons,
+      },
+      ...config,
+    }
   }
 
   private async _tryConnectBlade() {
@@ -24,15 +34,15 @@ class BladeWalletConnector implements IConnector {
 
     try {
       const bladeMetadata = Object.keys(this._metadata || {}).length > 0 ? (this._metadata as DAppMetadata) : undefined
-      this._bladeConnector = new BladeConnector(ConnectorStrategy.EXTENSION, bladeMetadata)
+      this._blade = await BladeConnector.init(this._connectorStrategy, bladeMetadata)
 
       if (this._debug)
         console.log(
           `[Blade Connector]: Create/Get blade session for ${this._network}. Blade popup should appear if there is no active session`,
         )
 
-      const pairedAccountIds = await this._bladeConnector.createSession({ network: this._network } as SessionParams)
-      const bladeSigner = this._bladeConnector.getSigner() as BladeWallet
+      const pairedAccountIds = await this._blade.createSession({ network: this._network } as SessionParams)
+      const bladeSigner = this._blade.getSigner() as BladeWallet
 
       if (this._debug && Array.isArray(pairedAccountIds) && pairedAccountIds.length) {
         console.log('[Blade Connector]: Connected with accounts', pairedAccountIds)
@@ -47,6 +57,9 @@ class BladeWalletConnector implements IConnector {
       if (this._debug) console.log('[Blade Connector]: Saving local session')
       localStorage.setItem(BLADE_STORAGE_KEY, JSON.stringify(localSession))
 
+      this._blade.onSessionDisconnect(this.wipePairingData.bind(this))
+      this._blade.onSessionExpire(this.wipePairingData.bind(this))
+
       bladeSigner.getProvider = () => ({
         getTransactionReceipt: (transactionId: string) => {
           return new TransactionReceiptQuery().setTransactionId(transactionId).executeWithSigner(bladeSigner!)
@@ -55,7 +68,7 @@ class BladeWalletConnector implements IConnector {
 
       return bladeSigner
     } catch (err) {
-      this._bladeConnector = null
+      this._blade = null
 
       if (err instanceof Error) {
         if (err.name === BladeWalletError.ExtensionNotFound) {
@@ -75,37 +88,13 @@ class BladeWalletConnector implements IConnector {
 
   async getConnection(): Promise<BladeWallet | null> {
     if (this._debug) console.log('[Blade Connector]: Looking for an existing session')
-    const isExtensionPresent = await this.checkExtensionPresence()
-
-    if (isExtensionPresent) {
-      const isWalletStateAvailable = this.isWalletStateAvailable()
-
-      if (this._debug) {
-        if (isWalletStateAvailable) {
-          console.log('[Blade Connector]: Found wallet local state')
-        } else {
-          console.log('[Blade Connector]: Could not find any local state. Waiting for a new connection')
-        }
-      }
-
-      return isExtensionPresent && isWalletStateAvailable ? ((await this._tryConnectBlade()) as BladeWallet) : null
-    }
-
-    return null
+    return this.isWalletStateAvailable() ? ((await this._tryConnectBlade()) as BladeWallet) : null
   }
 
   async newConnection(): Promise<BladeWallet | null> {
     if (this._debug) console.log('[Blade Connector]: Trying to create a new connection')
-    return new Promise<BladeWallet | null>((resolve) => {
-      this.checkExtensionPresence().then((isExtensionPresent) => {
-        if (!isExtensionPresent) {
-          if (this._debug && !isExtensionPresent)
-            console.log('[Blade Connector]: Could not find blade wallet extension')
-          return resolve(null)
-        }
-
-        this._tryConnectBlade().then((signer) => resolve(signer as BladeWallet))
-      })
+    return new Promise<BladeWallet | null>(async (resolve) => {
+      this._tryConnectBlade().then((signer) => resolve(signer as BladeWallet))
     })
   }
 
@@ -154,13 +143,21 @@ class BladeWalletConnector implements IConnector {
       if (this._debug) console.log('[Blade Connector]: Kill blade wallet session and wipe local data')
       localStorage.removeItem(BLADE_STORAGE_KEY)
 
-      await this._bladeConnector?.killSession()
-      this._bladeConnector = null
+      await this._blade?.killSession()
+      this._blade = null
       return true
     } catch (e) {
       console.error(e)
       return false
     }
+  }
+
+  get isExtensionRequired() {
+    return this._connectorStrategy === ConnectorStrategy.EXTENSION
+  }
+
+  get sdk(): BladeConnector | null {
+    return this._blade as BladeConnector | null
   }
 }
 

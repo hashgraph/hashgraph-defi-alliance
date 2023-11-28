@@ -77,9 +77,9 @@ const TransactionDemo = ({ connector }: IProps) => {
             const tx = await new TransferTransaction()
                 .addHbarTransfer(accountId || '', -state.amount)
                 .addHbarTransfer(AccountId.fromString(state.recipient), state.amount)
-                .freezeWithSigner(signer)
+                .freezeWithSigner(signer as any)
 
-            const txResponse = await tx.executeWithSigner(signer);
+            const txResponse = await tx.executeWithSigner(signer as any);
             onSuccessfulSend(JSON.stringify(txResponse, null, 2));
             return JSON.stringify(txResponse, null, 2);
         } catch (error: any) {
