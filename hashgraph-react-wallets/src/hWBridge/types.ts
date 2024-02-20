@@ -5,22 +5,27 @@ import { HashpackDAppMetadata, HashConnectWallet } from './connectors/HashpackCo
 import { BladeDAppMetadata, BladeWallet } from './connectors/BladeConnector/types'
 import { MagicWallet } from './connectors/MagicConnector/MagicWallet'
 import { MagicLoginConfig } from './connectors/MagicConnector/types'
+import { Client } from 'viem'
+import { Config } from 'wagmi'
 
-export type HederaNetwork = 'testnet' | 'mainnet'
 export type HWBridgeDAppMetadata = HashpackDAppMetadata | BladeDAppMetadata
 
 export type HWBridgeProps = {
-  network: HederaNetwork
   metadata: HWBridgeDAppMetadata
   defaultConnector?: HWBridgeConnector
   connectors: HWBridgeConnector[]
   multiSession?: boolean
   debug?: boolean
+  wagmiConfig: Config
 }
 
 export type ConnectionConfig = MagicLoginConfig
 
-export type HWBridgeSigner = HashConnectWallet | BladeWallet | MagicWallet
+export type HederaSignerType = HashConnectWallet | BladeWallet
+export type EthereumSignerType = Client
+export type OtherSignerType = MagicWallet
+
+export type HWBridgeSigner = HederaSignerType | EthereumSignerType | OtherSignerType
 
 export type HWBridgeSessionProps = {
   Connector: any

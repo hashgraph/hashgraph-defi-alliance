@@ -1,5 +1,6 @@
-import { AccountId } from '@hashgraph/sdk'
+import { Chain } from 'viem'
 import { ConnectionConfig, ConnectorConfig, HNSResult } from '../types'
+import { ConnectorType } from '../../constants'
 
 interface IConnector {
   getConnection(): void
@@ -12,13 +13,19 @@ interface IConnector {
 
   wipePairingData(): Promise<boolean>
 
-  resolveHNS(accountId: AccountId): Promise<HNSResult | null>
+  resolveHNS(accountId: string): Promise<HNSResult | null>
+
+  setChain(chainId: number): void
+
+  get type(): ConnectorType
 
   get isExtensionRequired(): boolean
 
   get sdk(): any
 
   get config(): ConnectorConfig
+
+  get chain(): Chain | null
 }
 
 export default IConnector

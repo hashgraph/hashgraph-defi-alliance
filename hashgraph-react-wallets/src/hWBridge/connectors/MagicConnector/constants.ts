@@ -1,3 +1,5 @@
+export const OAUTH_DEFAULT_REDIRECT_PATH = '/magic-oauth'
+
 export enum LoginModules {
   Auth = 'auth',
   OAuth = 'oauth',

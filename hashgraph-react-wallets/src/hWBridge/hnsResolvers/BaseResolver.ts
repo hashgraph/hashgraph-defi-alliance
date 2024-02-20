@@ -1,5 +1,5 @@
-import { AccountId } from '@hashgraph/sdk'
-import { HNSResult, HederaNetwork } from '../types'
+import { HederaNetwork } from '../../types'
+import { HNSResult } from '../types'
 
 export abstract class BaseResolver {
   protected readonly _network: HederaNetwork
@@ -8,7 +8,7 @@ export abstract class BaseResolver {
     this._network = network
   }
 
-  abstract get(accountId: AccountId): Promise<HNSResult>
+  abstract get(accountId: string): Promise<HNSResult>
 }
 
 export default BaseResolver

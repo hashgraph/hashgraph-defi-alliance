@@ -21,4 +21,5 @@ export type MagicLoginConfig = {
 
 export type MagicConfig = {
   publicApiKey?: string
+  oauthRedirectURI?: string
 }

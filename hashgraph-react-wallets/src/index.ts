@@ -1,3 +1,8 @@
+import { QueryClient } from '@tanstack/react-query'
+
+export const tanstackQueryClient = new QueryClient()
+
+export * from './constants'
 export * from './hooks'
 export type * from './hWBridge/types'
 export type { HWBridgeSession as HWBridgeWallet } from './hWBridge/HWBridgeSession'
