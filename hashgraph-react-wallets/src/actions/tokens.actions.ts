@@ -11,7 +11,7 @@ import { HWBridgeSession } from '../hWBridge'
 import { HederaSignerType } from '../hWBridge/types'
 import { Abi } from 'viem'
 import { Config } from 'wagmi'
-import { writeContract } from 'wagmi/actions'
+import { writeContract as wagmiWriteContract } from 'wagmi/actions'
 import { ConnectorType } from '../constants'
 import { toEvmAddress } from '../utils'
 
@@ -59,7 +59,7 @@ export const associateTokens = async <TWallet extends HWBridgeSession>({
   return Promise.all(
     tokens.map(async (tokenId) => {
       const address: `0x${string}` = toEvmAddress(ContractId.fromString(tokenId))
-      return await writeContract(config, { address, abi, functionName: 'associate' })
+      return await wagmiWriteContract(config, { __mode: 'prepared', address, abi, functionName: 'associate' })
     }),
   )
 }
@@ -133,7 +133,8 @@ export const approveTokensAllowance = async <TWallet extends HWBridgeSession>({
       const spenderId =
         typeof spender === 'string' ? toEvmAddress(ContractId.fromString(spender)) : toEvmAddress(spender)
 
-      return await writeContract(config, {
+      return await wagmiWriteContract(config, {
+        __mode: 'prepared',
         address: contractAddress,
         abi,
         functionName: 'approve',
@@ -213,7 +214,8 @@ export const approveTokensNFTAllowance = async <TWallet extends HWBridgeSession>
       const spenderId =
         typeof spender === 'string' ? toEvmAddress(ContractId.fromString(spender)) : toEvmAddress(spender)
 
-      return await writeContract(config, {
+      return await wagmiWriteContract(config, {
+        __mode: 'prepared',
         address: contractAddress,
         abi,
         functionName: 'approve',

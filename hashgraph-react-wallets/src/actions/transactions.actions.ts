@@ -68,7 +68,7 @@ export const getTransactionReceipt = async <TWallet extends HWBridgeSession>(
       throw new Error(`Failed fetch the child transactions for: ${transactionIdOrHash}`)
 
     const [ethereumTransaction, ...childTransactions] = childTransactionsResponse[0].transactions
-    const failedTransaction = [ethereumTransaction, ...childTransactions]
+    const failedTransaction = [...childTransactions, ethereumTransaction]
       .filter(Boolean)
       .find((transaction) => transaction.result !== 'SUCCESS')
 
