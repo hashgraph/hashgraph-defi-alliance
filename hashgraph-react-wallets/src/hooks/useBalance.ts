@@ -1,49 +1,25 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useConfig } from 'wagmi'
+import { getBalance } from '../actions'
 import { HWBridgeConnector } from '../hWBridge/connectors/types'
-import { useHWContext } from './useHWContext'
-import { AccountBalanceJson } from '@hashgraph/sdk'
 import { useWallet } from './useWallet'
+import { useQuery } from '@tanstack/react-query'
+import { useChain } from './useChain'
+import { HWBridgeQueryKeys } from '../constants'
 
-interface IBalanceResult {
-  loading: boolean
-  balance: AccountBalanceJson
-  updateBalance: () => void
+interface IUseBalanceProps<Connector> {
+  connector?: Connector | null
+  autoFetch?: boolean
 }
 
-export function useBalance<TConnector extends HWBridgeConnector>(connector?: TConnector | null) {
-  const wallet = useWallet(connector)
-  const { balances, getAccountBalance } = useHWContext()
-  const [state, setState] = useState<{ loading: boolean; shouldUpdate: boolean }>({
-    loading: false,
-    shouldUpdate: false,
+export function useBalance<TConnector extends HWBridgeConnector>(props?: IUseBalanceProps<TConnector>) {
+  const wallet = useWallet(props?.connector)
+  const { data: chainData } = useChain()
+  const config = useConfig()
+  const enabled = Boolean(wallet?.signer && (props?.autoFetch ?? true))
+
+  return useQuery({
+    queryKey: [HWBridgeQueryKeys.ACCOUNT_BALANCE, wallet.lastUpdated, chainData?.chain?.id],
+    queryFn: () => (chainData?.error ? null : getBalance({ wallet, config })),
+    enabled,
   })
-
-  const handleUpdateBalance = () => {
-    setState((prevState) => ({ ...prevState, shouldUpdate: true }))
-  }
-
-  useEffect(() => {
-    ;(async () => {
-      if (wallet.isConnected && state.shouldUpdate) {
-        try {
-          setState((prevState) => ({ ...prevState, loading: true }))
-          await getAccountBalance(wallet)
-        } catch (e) {
-          console.error('Unable lo load account balance.', e)
-        } finally {
-          setState((prevState) => ({ ...prevState, loading: false, shouldUpdate: false }))
-        }
-      }
-    })()
-  }, [wallet, wallet.isConnected, balances, state.shouldUpdate])
-
-  return useMemo(
-    () =>
-      ({
-        loading: state.loading,
-        balance: balances[wallet.sessionId],
-        updateBalance: handleUpdateBalance,
-      } as IBalanceResult),
-    [balances, state.loading],
-  )
 }

@@ -15,7 +15,7 @@ export function useCreateAuthToken(
 ): [() => Promise<string>, () => Promise<CreateTokenRequestBody>] {
   const sdk = useWalletSDK()
   const wallet = useWallet()
-  const { accountId } = useAccountId()
+  const { data: accountId } = useAccountId()
 
   const createAuthTokenRequestBody = async () => {
     if (!accountId) throw new Error('AccountId could not be found. Please connect first.')
@@ -27,7 +27,7 @@ export function useCreateAuthToken(
 
     const authRes = await hashconnect.authenticate(
       hashconnect.hcData.topic,
-      accountId.toString(),
+      accountId,
       challenge.server.accountId,
       Buffer.from(challenge.server.signature, 'hex'),
       challenge.payload,

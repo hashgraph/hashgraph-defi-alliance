@@ -1,40 +1,25 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useConfig } from 'wagmi'
+import { getAccountId } from '../actions'
 import { HWBridgeConnector } from '../hWBridge/connectors/types'
-import { useHWContext } from './useHWContext'
-import { AccountId } from '@hashgraph/sdk'
 import { useWallet } from './useWallet'
+import { useQuery } from '@tanstack/react-query'
+import { useChain } from './useChain'
+import { HWBridgeQueryKeys } from '../constants'
 
-interface AccountIdResult {
-  accountId?: AccountId
-  loading: boolean
+interface IUseAccountIdProps<Connector> {
+  connector?: Connector | null
+  autoFetch?: boolean
 }
 
-export function useAccountId<TConnector extends HWBridgeConnector>(connector?: TConnector | null) {
-  const wallet = useWallet(connector)
-  const { accountIds, getAccountId } = useHWContext()
-  const [loading, setLoading] = useState<boolean>(false)
+export function useAccountId<TConnector extends HWBridgeConnector>(props?: IUseAccountIdProps<TConnector>) {
+  const wallet = useWallet(props?.connector)
+  const { data: chainData } = useChain()
+  const config = useConfig()
+  const enabled = Boolean(wallet?.signer && (props?.autoFetch ?? true))
 
-  useEffect(() => {
-    ;(async () => {
-      if (wallet.isConnected && !accountIds.hasOwnProperty(wallet.sessionId)) {
-        try {
-          setLoading(true)
-          await getAccountId(wallet)
-        } catch (e) {
-          console.error('Unable lo load account id.', e)
-        } finally {
-          setLoading(false)
-        }
-      }
-    })()
-  }, [wallet, wallet.isConnected, accountIds])
-
-  return useMemo(
-    () =>
-      ({
-        accountId: accountIds[wallet.sessionId],
-        loading,
-      } as AccountIdResult),
-    [accountIds, loading],
-  )
+  return useQuery({
+    queryKey: [HWBridgeQueryKeys.ACCOUNT_ID, wallet.lastUpdated, chainData?.chain?.id],
+    queryFn: () => (chainData?.error ? null : getAccountId({ wallet, config })),
+    enabled,
+  })
 }

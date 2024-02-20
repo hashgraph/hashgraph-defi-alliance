@@ -1,29 +1,29 @@
 import { Magic } from 'magic-sdk'
 import { SDKBase, InstanceWithExtensions } from '@magic-sdk/provider'
 import { HederaExtension } from '@magic-ext/hedera'
-import { OAuthExtension } from '@magic-ext/oauth'
+import { OAuthExtension, OAuthRedirectConfiguration } from '@magic-ext/oauth'
 import { MagicWallet } from './MagicWallet'
 import { MagicProvider } from './MagicProvider'
 import { HWBConnectorProps } from '../types'
 import { MagicLoginConfig } from './types'
-import { LoginModules } from './constants'
+import { LoginModules, OAUTH_DEFAULT_REDIRECT_PATH } from './constants'
 import MagicIconWhite from '../../../assets/magic-icon.png'
 import MagicIconDark from '../../../assets/magic-icon-dark.png'
-import BaseConnector from '../BaseConnector'
+import { HederaConnector } from '../HederaConnector'
 
-class MagicConnector extends BaseConnector {
+class MagicConnector extends HederaConnector {
   private readonly _magic: InstanceWithExtensions<SDKBase, HederaExtension[] | OAuthExtension[]>
 
-  constructor({ network, metadata, config, debug = false }: HWBConnectorProps) {
-    super({ network, metadata, config, debug })
+  constructor(props: HWBConnectorProps) {
+    super(props)
 
     this._config = {
       icons: {
         white: MagicIconWhite,
         dark: MagicIconDark,
-        ...config?.icons,
+        ...props.config?.icons,
       },
-      ...config,
+      ...props.config,
     }
 
     if (!this._config?.publicApiKey) throw new Error('`publicApiKey` is missing from MagicConnector config')
@@ -50,7 +50,7 @@ class MagicConnector extends BaseConnector {
   async getConnection(): Promise<MagicWallet | null> {
     if (this._debug) console.log('[Magic Connector]: Looking for an existing session')
 
-    if (window.location.pathname === '/oauth') {
+    if (new RegExp(this._config.oauthRedirectURI || OAUTH_DEFAULT_REDIRECT_PATH).test(window.location.pathname)) {
       const oAuthResult = await this._magic.oauth.getRedirectResult()
 
       if (oAuthResult.oauth?.accessToken) {
@@ -82,9 +82,11 @@ class MagicConnector extends BaseConnector {
         if (props.loginModule === LoginModules.Auth) {
           await this._magic.auth[props.method]?.(props.args as any)
         } else {
+          const redirectURI = window.location.href + (this._config.oauthRedirectURI || OAUTH_DEFAULT_REDIRECT_PATH)
+
           await this._magic.oauth.loginWithRedirect({
-            ...(props.args as any),
-            redirectURI: window.location.href + 'oauth',
+            ...(props.args as OAuthRedirectConfiguration),
+            redirectURI,
           })
         }
 

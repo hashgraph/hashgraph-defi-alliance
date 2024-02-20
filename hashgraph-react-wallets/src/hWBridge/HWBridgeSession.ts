@@ -1,3 +1,4 @@
+import { Config } from 'wagmi'
 import { HWBridgeConnectorInstance } from './connectors/types'
 import { ConnectionConfig, HWBridgeSessionProps, HWBridgeSigner } from './types'
 import short from 'short-uuid'
@@ -12,21 +13,27 @@ export class HWBridgeSession {
   #isLoading: boolean = false
   #extensionReady: boolean = false
   #autoPaired: boolean = false
+  #lastUpdated: number
 
-  constructor({ Connector, onUpdate, network, metadata, debug, config }: HWBridgeSessionProps) {
+  constructor({ Connector, onUpdate, metadata, debug, config, wagmiConfig }: HWBridgeSessionProps) {
     this.#sessionId = short.generate()
     this.#connector = new Connector({
-      network,
       metadata,
       debug,
       config,
-      onAutoPairing: this.#_onAutoPairing.bind(this),
+      onAutoPairing: this.#onAutoPairing.bind(this),
+      wagmiConfig,
     })
 
-    this.#onUpdate = onUpdate
+    this.#onUpdate = (session: HWBridgeSession | null) => {
+      this.#lastUpdated = Math.floor(Date.now() / 1000)
+      onUpdate(session)
+    }
+
     this.connect = this.connect.bind(this)
     this.disconnect = this.disconnect.bind(this)
-    this.#_initSession()
+
+    this.#initSession(wagmiConfig)
   }
 
   isSessionFor(who: HWBridgeConnectorInstance | any): boolean {
@@ -37,7 +44,7 @@ export class HWBridgeSession {
     this.#signer = signer
   }
 
-  #_onAutoPairing(signer: HWBridgeSigner): void {
+  #onAutoPairing(signer: HWBridgeSigner | null): void {
     this.#signer = signer
     this.#isConnected = !!signer
     this.#autoPaired = true
@@ -45,12 +52,8 @@ export class HWBridgeSession {
   }
 
   async connect(props?: Partial<ConnectionConfig>): Promise<HWBridgeSession> {
-    this.#isLoading = true
-    this.#onUpdate(this)
-
     this.#signer = await this.#connector?.newConnection(props as ConnectionConfig)
     this.#isConnected = !!this.#signer
-
     this.#isLoading = false
     this.#onUpdate(this)
 
@@ -58,9 +61,6 @@ export class HWBridgeSession {
   }
 
   async disconnect(): Promise<boolean> {
-    this.#isLoading = true
-    this.#onUpdate()
-
     this.#isConnected = !(await this.#connector?.wipePairingData())
     this.setSigner(null)
 
@@ -70,19 +70,33 @@ export class HWBridgeSession {
     return true
   }
 
-  async #_initSession(): Promise<HWBridgeSession> {
+  async #initSession(wagmiConfig: Config): Promise<HWBridgeSession> {
     this.#isLoading = true
     this.#onUpdate()
 
-    this.#extensionReady = await this.#connector?.checkExtensionPresence()
-    this.#signer = await this.#connector?.getConnection()
-    this.#isInitialized = true
-    this.#isConnected = !!this.#signer
-    this.#isLoading = false
+    return new Promise(async (resolve) => {
+      this.#extensionReady = await this.#connector?.checkExtensionPresence()
+      this.#isLoading = false
 
-    this.#onUpdate(this.#signer && this)
+      this.#onUpdate()
 
-    return this
+      return wagmiConfig.subscribe(
+        async (state) => {
+          if (state.status === 'connected' && !this.#isInitialized) {
+            this.#isInitialized = true
+
+            this.#signer = await this.#connector?.getConnection()
+            this.#isConnected = !!this.#signer
+            this.#isLoading = false
+
+            this.#onUpdate(this.#signer && this)
+
+            resolve(this)
+          }
+        },
+        () => null,
+      )
+    })
   }
 
   get sessionId(): string {
@@ -123,5 +137,9 @@ export class HWBridgeSession {
 
   get autoPaired(): boolean {
     return this.#autoPaired
+  }
+
+  get lastUpdated(): number {
+    return this.#lastUpdated
   }
 }

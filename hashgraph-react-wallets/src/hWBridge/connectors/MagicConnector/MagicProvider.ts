@@ -9,7 +9,7 @@ import {
   Executable,
   TransactionResponse,
 } from '@hashgraph/sdk'
-import { HederaNetwork } from '../../types'
+import { HederaNetwork } from '../../../types'
 
 export class MagicProvider {
   private readonly _client: Client

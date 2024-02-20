@@ -1,12 +1,12 @@
-import { HederaNetwork, HWBridgeDAppMetadata, HWBridgeProps, HWBridgeSessionProps } from './types'
+import { HWBridgeDAppMetadata, HWBridgeProps, HWBridgeSessionProps } from './types'
 import { ConnectorConfig, HWBridgeConnector } from './connectors/types'
 import { HWBridgeSession } from './HWBridgeSession'
 import { EventEmitter } from 'events'
 import Subscription, { ON_SESSION_CHANGE_EVENT } from './events'
+import { Config } from 'wagmi'
 
 class HWBridge {
   readonly #events: EventEmitter
-  readonly #network: HederaNetwork
   readonly #metadata?: HWBridgeDAppMetadata
   readonly #defaultConnector?: HWBridgeConnector
   readonly multiSession: boolean
@@ -14,23 +14,22 @@ class HWBridge {
   #sessions: HWBridgeSession[]
 
   constructor({
-    network,
     metadata,
     defaultConnector,
     connectors = [],
     multiSession = false,
     debug = false,
+    wagmiConfig = {} as Config,
   }: HWBridgeProps) {
     this.#events = new EventEmitter()
-    this.#network = network
     this.#metadata = metadata
     this.#defaultConnector = defaultConnector
     this.multiSession = multiSession
     this.debug = debug
-    this.#sessions = this.#initSessions(connectors) || []
+    this.#sessions = this.#initSessions(connectors, wagmiConfig) || []
   }
 
-  #initSessions(_connectors: (HWBridgeConnector | [HWBridgeConnector, ConnectorConfig])[]) {
+  #initSessions(_connectors: (HWBridgeConnector | [HWBridgeConnector, ConnectorConfig])[], wagmiConfig: Config) {
     if (Array.isArray(_connectors) && _connectors.length > 0) {
       return _connectors
         .map((ConectorType: HWBridgeConnector | [HWBridgeConnector, any]) => {
@@ -38,11 +37,11 @@ class HWBridge {
 
           return new HWBridgeSession({
             Connector: Connector,
-            network: this.#network,
             metadata: this.#metadata,
             debug: this.debug,
             config,
             onUpdate: this.#updateBridge.bind(this),
+            wagmiConfig,
           } as HWBridgeSessionProps)
         })
         .filter(Boolean)
@@ -65,12 +64,10 @@ class HWBridge {
       if (!this.multiSession) {
         this.#sessions = await Promise.all(
           this.#sessions.map(async (session) => {
-            if (session === newConnection) {
-              return session
-            } else {
-              await session.disconnect()
-              return session
-            }
+            if (session.sessionId === newConnection.sessionId) return session
+            if (session.isConnected) await session.disconnect()
+
+            return session
           }),
         )
       }

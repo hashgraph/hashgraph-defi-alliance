@@ -1,31 +1,27 @@
 import { BladeConnector, ConnectorStrategy, BladeWalletError, SessionParams } from '@bladelabs/blade-web3.js'
 import { DAppMetadata } from '@hashgraph/hedera-wallet-connect'
-import { 
-  BLADE_EXTENSION_POLLING_ATTEMPTS, 
-  BLADE_EXTENSION_POLLING_INTERVAL, 
-  BLADE_STORAGE_KEY
-} from './constants'
+import { BLADE_EXTENSION_POLLING_ATTEMPTS, BLADE_EXTENSION_POLLING_INTERVAL, BLADE_STORAGE_KEY } from './constants'
 import { BladeWallet } from './types'
 import { HWBConnectorProps } from '../types'
 import { TransactionReceiptQuery } from '@hashgraph/sdk'
 import BladeLogoWhite from '../../../assets/blade-icon.png'
 import BladeLogoDark from '../../../assets/blade-icon-dark.png'
-import BaseConnector from '../BaseConnector'
+import { HederaConnector } from '../HederaConnector'
 
-class BladeWalletConnector extends BaseConnector {
+class BladeWalletConnector extends HederaConnector {
   private _blade: BladeConnector | null = null
   private _connectorStrategy: ConnectorStrategy
 
-  constructor({ network, metadata, config, debug }: HWBConnectorProps) {
-    super({ network, metadata, config, debug })
+  constructor(props: HWBConnectorProps) {
+    super(props)
     this._connectorStrategy = ConnectorStrategy.AUTO
     this._config = {
       icons: {
         white: BladeLogoWhite,
         dark: BladeLogoDark,
-        ...config?.icons,
+        ...props.config?.icons,
       },
-      ...config,
+      ...props.config,
     }
   }
 
