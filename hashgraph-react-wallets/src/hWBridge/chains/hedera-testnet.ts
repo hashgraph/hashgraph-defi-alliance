@@ -1,4 +1,4 @@
-import { Chain } from "viem";
+import { Chain } from 'viem'
 
 export default {
   id: 296,
