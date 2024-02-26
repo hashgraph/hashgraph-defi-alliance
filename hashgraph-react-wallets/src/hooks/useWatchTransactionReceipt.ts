@@ -5,16 +5,17 @@ import { tanstackQueryClient } from '..'
 import { getTransactionReceipt } from '../actions'
 import { HWBridgeQueryKeys, regexPatterns } from '../constants'
 
-interface IUseAccountIdProps<Connector> {
+interface IUseWatchTransactionReceiptProps<Connector> {
   connector?: Connector | null
+  contract?: any
   retryInterval?: number
   retryMaxAttempts?: number
 }
 
 export function useWatchTransactionReceipt<TConnector extends HWBridgeConnector>(
-  props?: IUseAccountIdProps<TConnector>,
+  props?: IUseWatchTransactionReceiptProps<TConnector>,
 ) {
-  const { connector, ...options } = props || {}
+  const { connector, contract, ...options } = props || {}
   const wallet = useWallet(connector)
 
   const handleWatchTransactionReceipt = useCallback(
@@ -24,7 +25,7 @@ export function useWatchTransactionReceipt<TConnector extends HWBridgeConnector>
         onSuccess: <Transaction extends { transaction_id: string }>(transaction: Transaction) => Transaction
         onError: <Transaction extends { transaction_id: string }>(
           transaction: Transaction,
-          message?: string,
+          error: string | string[] | null,
         ) => Transaction
       },
     ) => {
@@ -36,13 +37,13 @@ export function useWatchTransactionReceipt<TConnector extends HWBridgeConnector>
       return await tanstackQueryClient.fetchQuery({
         queryKey: [HWBridgeQueryKeys.WATCH_TRANSACTION_RECEIPT, wallet.lastUpdated, transactionIdOrHash],
         queryFn: () =>
-          getTransactionReceipt(wallet, transactionIdOrHash, wallet.connector.network, callbacks, {
+          getTransactionReceipt(wallet, contract, transactionIdOrHash, wallet.connector.network, callbacks, {
             retryInterval: options?.retryInterval,
             retryMaxAttempts: options?.retryMaxAttempts,
           }),
       })
     },
-    [wallet, options?.retryInterval, options?.retryMaxAttempts],
+    [wallet, contract, options?.retryInterval, options?.retryMaxAttempts],
   )
 
   return {

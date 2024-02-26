@@ -45,6 +45,38 @@ export const getAccountId = async <TWallet extends HWBridgeSession>({
   }
 }
 
+export const getEvmAddress = async <TWallet extends HWBridgeSession>({
+  wallet,
+  config,
+}: {
+  wallet: TWallet
+  config: Config
+}): Promise<string | null> => {
+  if (!wallet.signer) return null
+  if (wallet.connector.type === ConnectorType.HEDERA) {
+    try {
+      const accountId = (wallet.signer as HederaSignerType).getAccountId().toString()
+
+      const accountMirrorResponse = await queryMirror<{ evm_address: string }[]>({
+        path: `/api/v1/accounts/${accountId}`,
+        queryKey: ['getHederaEvmAddress'],
+        options: { network: wallet.connector.network, firstOnly: true },
+      })
+
+      if (!accountMirrorResponse?.[0].evm_address) {
+        return null
+      }
+
+      return accountMirrorResponse[0].evm_address
+    } catch (e) {
+      console.error(e)
+      return null
+    }
+  }
+
+  return wagmi_getAccount(config).address || null
+}
+
 export const getBalance = async <TWallet extends HWBridgeSession>({
   wallet,
   config,

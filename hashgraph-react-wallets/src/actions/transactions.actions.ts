@@ -2,15 +2,18 @@ import { sleep } from '../utils'
 import { ConnectorType } from '../constants'
 import { HWBridgeSession } from '../hWBridge'
 import { getContractResults, getTransactionsByTimestamp, getTransactionsById } from './mirror.actions'
-import { hexToString } from 'viem'
+import { Abi, decodeErrorResult } from 'viem'
 import { HederaNetwork } from '../types'
 
-const DEFAULT_RETRY_ATTEMPTS = 5
+const DEFAULT_RETRY_ATTEMPTS = 10
 const DEFAULT_RETRY_DELAY = 2000
 
 export type GetTransactionReceiptCallbacks = {
   onSuccess: <Transaction extends { transaction_id: string }>(transaction: Transaction) => Transaction
-  onError: <Transaction extends { transaction_id: string }>(transaction: Transaction, message?: string) => Transaction
+  onError: <Transaction extends { transaction_id: string }>(
+    transaction: Transaction,
+    error: string | string[] | null,
+  ) => Transaction
 }
 
 export type GetTransactionQueryOptions = {
@@ -20,6 +23,7 @@ export type GetTransactionQueryOptions = {
 
 export const getTransactionReceipt = async <TWallet extends HWBridgeSession>(
   wallet: TWallet,
+  contract: any,
   transactionIdOrHash: string,
   network: HederaNetwork,
   { onSuccess, onError }: GetTransactionReceiptCallbacks,
@@ -73,13 +77,12 @@ export const getTransactionReceipt = async <TWallet extends HWBridgeSession>(
       .find((transaction) => transaction.result !== 'SUCCESS')
 
     if (failedTransaction) {
-      const errorMessage =
-        failedTransaction.name === 'CONTRACTCALL'
-          ? await getTransactionErrorMessage(wallet, transactionIdOrHash, network, {
-              retryMaxAttempts,
-              retryInterval,
-            })
-          : failedTransaction.result
+      const errorMessage = contract
+        ? await getTransactionErrorMessage(wallet, contract, transactionIdOrHash, network, {
+            retryMaxAttempts,
+            retryInterval,
+          })
+        : failedTransaction.result
 
       onError(failedTransaction, errorMessage)
       return failedTransaction
@@ -94,6 +97,7 @@ export const getTransactionReceipt = async <TWallet extends HWBridgeSession>(
 
       return getTransactionReceipt(
         wallet,
+        contract,
         transactionIdOrHash,
         network,
         { onSuccess, onError },
@@ -110,24 +114,35 @@ export const getTransactionReceipt = async <TWallet extends HWBridgeSession>(
 
 export const getTransactionErrorMessage = async <TWallet extends HWBridgeSession>(
   wallet: TWallet,
+  contract: any,
   transactionIdOrHash: string,
   network: HederaNetwork,
   { retryMaxAttempts = DEFAULT_RETRY_ATTEMPTS, retryInterval = DEFAULT_RETRY_DELAY }: GetTransactionQueryOptions,
-): Promise<any> => {
+): Promise<string | string[] | null> => {
   try {
     const [transaction] =
-      (await getContractResults<{ timestamp: string; error_message: `0x${string}` }[]>({
+      (await getContractResults<{ timestamp: string; result: string; error_message: `0x${string}` }[]>({
         transactionIdOrHash,
         network,
       })) ?? []
 
     if (!transaction.timestamp) throw new Error(`Failed retrieve info for: ${transactionIdOrHash}`)
+    if (!transaction.error_message) return null
 
-    if (transaction.error_message) {
-      return hexToString(transaction.error_message)
+    if (transaction.error_message.startsWith('0x')) {
+      try {
+        const decodedError = decodeErrorResult({
+          abi: (contract.abi ?? contract.interface.fragments) as Abi,
+          data: transaction.error_message,
+        })
+
+        return decodedError.args as string[]
+      } catch (e) {
+        return transaction.result
+      }
     }
 
-    return null
+    return transaction.error_message
   } catch (e) {
     if (retryMaxAttempts >= 1) {
       console.warn(
@@ -135,7 +150,7 @@ export const getTransactionErrorMessage = async <TWallet extends HWBridgeSession
       )
       await sleep(retryInterval)
 
-      return getTransactionErrorMessage(wallet, transactionIdOrHash, network, {
+      return getTransactionErrorMessage(wallet, contract, transactionIdOrHash, network, {
         retryMaxAttempts: retryMaxAttempts - 1,
         retryInterval,
       })

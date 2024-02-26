@@ -17,6 +17,7 @@ export enum ConnectorType {
 
 export enum HWBridgeQueryKeys {
   ACCOUNT_ID = 'accountId',
+  EVM_ADDRESS = 'evmAddress',
   ACCOUNT_BALANCE = 'accountBalance',
   TOKENS_BALANCE = 'tokensBalance',
   GET_CHAIN_ID = 'getChainId',

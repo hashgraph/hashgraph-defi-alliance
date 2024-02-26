@@ -11,7 +11,6 @@ import {
   disconnect,
 } from 'wagmi/actions'
 import { metaMask } from 'wagmi/connectors'
-// import '@metamask/sdk'
 import MetamaskIconWhite from '../../../assets/metamask-icon.png'
 import MetamaskIconDark from '../../../assets/metamask-icon-dark.png'
 
