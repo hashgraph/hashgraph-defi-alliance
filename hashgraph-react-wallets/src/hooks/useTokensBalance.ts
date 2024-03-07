@@ -2,7 +2,7 @@ import { queryMirror } from '../actions'
 import { HWBridgeConnector } from '../hWBridge/connectors/types'
 import { useQuery } from '@tanstack/react-query'
 import { useAccountId } from './useAccountId'
-import { MirrorBalancesResponse } from '../actions/types'
+import { MirrorTokensResponse } from '../actions/types'
 import { HWBridgeQueryKeys } from '../constants'
 import { useWallet } from './useWallet'
 
@@ -25,8 +25,8 @@ export function useTokensBalance<TConnector extends HWBridgeConnector>({
   const enabled = Boolean(connectedAccountId && (autoFetch ?? true))
 
   const queryFn = async () => {
-    return queryMirror<MirrorBalancesResponse[]>({
-      path: `/api/v1/balances?account.id=${connectedAccountId}`,
+    return queryMirror<MirrorTokensResponse[]>({
+      path: `/api/v1/accounts/${connectedAccountId}/tokens`,
       queryKey: [HWBridgeQueryKeys.TOKENS_BALANCE],
       options: {
         network: wallet.connector.network,
@@ -41,8 +41,7 @@ export function useTokensBalance<TConnector extends HWBridgeConnector>({
     select: (data) => {
       if (!data || data[0]._status?.messages.length) return null
 
-      const accountBalances = data.map(({ balances }) => balances).flat()
-      const tokenBalances = accountBalances.map(({ tokens }) => tokens).flat()
+      const tokenBalances = data.map(({ tokens }) => tokens).flat()
 
       if (tokens?.length) {
         return tokenBalances.filter(({ token_id }) => tokens.indexOf(token_id) > -1)
