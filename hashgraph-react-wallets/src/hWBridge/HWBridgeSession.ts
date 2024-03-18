@@ -70,6 +70,18 @@ export class HWBridgeSession {
     return true
   }
 
+  async #setConnectionState() {
+    this.#isInitialized = true
+
+    this.#signer = await this.#connector?.getConnection()
+    this.#isConnected = !!this.#signer
+    this.#isLoading = false
+
+    this.#onUpdate(this.#signer && this)
+
+    return this
+  }
+
   async #initSession(wagmiConfig: Config): Promise<HWBridgeSession> {
     this.#isLoading = true
     this.#onUpdate()
@@ -80,19 +92,15 @@ export class HWBridgeSession {
 
       this.#onUpdate()
 
+      // If there are no mipds, just try getting the native wallets connection state
+      if (!wagmiConfig.state.connections.size) {
+        resolve(await this.#setConnectionState())
+      }
+
+      // Otherwise, wait for wagmi store to be initialized, and detect the active connections
       return wagmiConfig.subscribe(
         async (state) => {
-          if (state.status === 'connected' && !this.#isInitialized) {
-            this.#isInitialized = true
-
-            this.#signer = await this.#connector?.getConnection()
-            this.#isConnected = !!this.#signer
-            this.#isLoading = false
-
-            this.#onUpdate(this.#signer && this)
-
-            resolve(this)
-          }
+          if (state.status === 'connected' && !this.#isInitialized) resolve(await this.#setConnectionState())
         },
         () => null,
       )
