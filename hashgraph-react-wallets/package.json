@@ -1,6 +1,6 @@
 {
   "name": "@buidlerlabs/hashgraph-react-wallets",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "A lightweight library that aims to provide an easier way to interact with the hedera network from a UI perspective",
   "keywords": [
     "react",

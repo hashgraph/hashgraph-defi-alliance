@@ -17,6 +17,7 @@ import { Chain, http, HttpTransport } from 'viem'
 
 interface IProps {
   children: ReactNode | ReactNode[]
+  LoadingFallback?: () => JSX.Element
   chains: Chain[]
   metadata: HWBridgeDAppMetadata
   defaultConnector?: HWBridgeConnector
@@ -33,8 +34,11 @@ export interface IHWBridgeContext {
 
 export const HWBridgeContext = createContext<IHWBridgeContext | null>(null)
 
+const DefaultLoadingFallback = () => <div>Loading...</div>
+
 const HWBridgeProvider = ({
   children,
+  LoadingFallback = DefaultLoadingFallback,
   chains = [],
   metadata,
   defaultConnector,
@@ -92,7 +96,13 @@ const HWBridgeProvider = ({
   return (
     <WagmiProvider config={context?.wagmiConfig}>
       <QueryClientProvider client={tanstackQueryClient}>
-        <HWBridgeContext.Provider value={value}>{children}</HWBridgeContext.Provider>
+        <HWBridgeContext.Provider value={value}>
+          {
+            context.hWBridge?.isInitialized
+              ? children
+              : <LoadingFallback/>
+          }
+        </HWBridgeContext.Provider>
       </QueryClientProvider>
     </WagmiProvider>
   )
