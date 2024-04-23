@@ -76,8 +76,8 @@ class HWBridge {
     this.#events.emit(ON_SESSION_CHANGE_EVENT, this)
   }
 
-  get isInitialized(): boolean {    
-    return this.#sessions.every(session => session.isInitialized);
+  get isInitialized(): boolean {
+    return this.#sessions.every((session) => session.isInitialized)
   }
 
   get isMultiSession(): boolean {

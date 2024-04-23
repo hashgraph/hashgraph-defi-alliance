@@ -97,11 +97,7 @@ const HWBridgeProvider = ({
     <WagmiProvider config={context?.wagmiConfig}>
       <QueryClientProvider client={tanstackQueryClient}>
         <HWBridgeContext.Provider value={value}>
-          {
-            context.hWBridge?.isInitialized
-              ? children
-              : <LoadingFallback/>
-          }
+          {context.hWBridge?.isInitialized ? children : <LoadingFallback />}
         </HWBridgeContext.Provider>
       </QueryClientProvider>
     </WagmiProvider>
