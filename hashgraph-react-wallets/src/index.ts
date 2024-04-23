@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 
 export const tanstackQueryClient = new QueryClient()
 
+export { parseEther } from 'viem'
 export * from './constants'
 export * from './hooks'
 export type * from './hWBridge/types'
