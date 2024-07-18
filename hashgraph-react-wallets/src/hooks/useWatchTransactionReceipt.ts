@@ -4,6 +4,7 @@ import { useWallet } from './useWallet'
 import { tanstackQueryClient } from '..'
 import { getTransactionReceipt } from '../actions'
 import { HWBridgeQueryKeys, regexPatterns } from '../constants'
+import { DecodeErrorResultReturnType } from 'viem'
 
 interface IUseWatchTransactionReceiptProps<Connector> {
   connector?: Connector | null
@@ -25,7 +26,7 @@ export function useWatchTransactionReceipt<TConnector extends HWBridgeConnector>
         onSuccess: <Transaction extends { transaction_id: string }>(transaction: Transaction) => Transaction
         onError: <Transaction extends { transaction_id: string }>(
           transaction: Transaction,
-          error: string | string[] | null,
+          error: string | DecodeErrorResultReturnType | null,
         ) => Transaction
       },
     ) => {

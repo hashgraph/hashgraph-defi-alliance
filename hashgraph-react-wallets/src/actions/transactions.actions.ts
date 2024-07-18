@@ -2,7 +2,7 @@ import { sleep } from '../utils'
 import { ConnectorType } from '../constants'
 import { HWBridgeSession } from '../hWBridge'
 import { getContractResults, getTransactionsByTimestamp, getTransactionsById } from './mirror.actions'
-import { Abi, decodeErrorResult } from 'viem'
+import { Abi, DecodeErrorResultReturnType, decodeErrorResult } from 'viem'
 import { HederaNetwork } from '../types'
 
 const DEFAULT_RETRY_ATTEMPTS = 10
@@ -12,7 +12,7 @@ export type GetTransactionReceiptCallbacks = {
   onSuccess: <Transaction extends { transaction_id: string }>(transaction: Transaction) => Transaction
   onError: <Transaction extends { transaction_id: string }>(
     transaction: Transaction,
-    error: string | string[] | null,
+    error: string | DecodeErrorResultReturnType | null,
   ) => Transaction
 }
 
@@ -118,7 +118,7 @@ export const getTransactionErrorMessage = async <TWallet extends HWBridgeSession
   transactionIdOrHash: string,
   network: HederaNetwork,
   { retryMaxAttempts = DEFAULT_RETRY_ATTEMPTS, retryInterval = DEFAULT_RETRY_DELAY }: GetTransactionQueryOptions,
-): Promise<string | string[] | null> => {
+): Promise<string | DecodeErrorResultReturnType | null> => {
   try {
     const [transaction] =
       (await getContractResults<{ timestamp: string; result: string; error_message: `0x${string}` }[]>({
@@ -136,7 +136,7 @@ export const getTransactionErrorMessage = async <TWallet extends HWBridgeSession
           data: transaction.error_message,
         })
 
-        return decodedError.args as string[]
+        return decodedError
       } catch (e) {
         return transaction.result
       }
