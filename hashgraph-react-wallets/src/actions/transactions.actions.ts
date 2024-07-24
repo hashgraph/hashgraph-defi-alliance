@@ -21,9 +21,12 @@ export type GetTransactionQueryOptions = {
   retryInterval?: number
 }
 
-export const getTransactionReceipt = async <TWallet extends HWBridgeSession>(
+export const getTransactionReceipt = async <
+  TWallet extends HWBridgeSession,
+  const abi extends Abi | readonly unknown[],
+>(
   wallet: TWallet,
-  contract: any,
+  abi: abi,
   transactionIdOrHash: string,
   network: HederaNetwork,
   { onSuccess, onError }: GetTransactionReceiptCallbacks,
@@ -77,8 +80,8 @@ export const getTransactionReceipt = async <TWallet extends HWBridgeSession>(
       .find((transaction) => transaction.result !== 'SUCCESS')
 
     if (failedTransaction) {
-      const errorMessage = contract
-        ? await getTransactionErrorMessage(wallet, contract, transactionIdOrHash, network, {
+      const errorMessage = abi
+        ? await getTransactionErrorMessage(wallet, abi, transactionIdOrHash, network, {
             retryMaxAttempts,
             retryInterval,
           })
@@ -97,7 +100,7 @@ export const getTransactionReceipt = async <TWallet extends HWBridgeSession>(
 
       return getTransactionReceipt(
         wallet,
-        contract,
+        abi,
         transactionIdOrHash,
         network,
         { onSuccess, onError },
@@ -112,9 +115,12 @@ export const getTransactionReceipt = async <TWallet extends HWBridgeSession>(
   }
 }
 
-export const getTransactionErrorMessage = async <TWallet extends HWBridgeSession>(
+export const getTransactionErrorMessage = async <
+  TWallet extends HWBridgeSession,
+  const abi extends Abi | readonly unknown[],
+>(
   wallet: TWallet,
-  contract: any,
+  abi: abi,
   transactionIdOrHash: string,
   network: HederaNetwork,
   { retryMaxAttempts = DEFAULT_RETRY_ATTEMPTS, retryInterval = DEFAULT_RETRY_DELAY }: GetTransactionQueryOptions,
@@ -132,7 +138,7 @@ export const getTransactionErrorMessage = async <TWallet extends HWBridgeSession
     if (transaction.error_message.startsWith('0x')) {
       try {
         const decodedError = decodeErrorResult({
-          abi: (contract.abi ?? contract.interface.fragments) as Abi,
+          abi: abi as Abi,
           data: transaction.error_message,
         })
 
@@ -150,7 +156,7 @@ export const getTransactionErrorMessage = async <TWallet extends HWBridgeSession
       )
       await sleep(retryInterval)
 
-      return getTransactionErrorMessage(wallet, contract, transactionIdOrHash, network, {
+      return getTransactionErrorMessage(wallet, abi, transactionIdOrHash, network, {
         retryMaxAttempts: retryMaxAttempts - 1,
         retryInterval,
       })

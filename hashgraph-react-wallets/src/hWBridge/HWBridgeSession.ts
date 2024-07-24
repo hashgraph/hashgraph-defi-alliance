@@ -2,6 +2,7 @@ import { Config } from 'wagmi'
 import { HWBridgeConnectorInstance } from './connectors/types'
 import { ConnectionConfig, HWBridgeSessionProps, HWBridgeSigner } from './types'
 import short from 'short-uuid'
+import { ConnectionStrategy, WagmiConnectionStrategy } from './strategies'
 
 export class HWBridgeSession {
   readonly #sessionId: string
@@ -15,14 +16,18 @@ export class HWBridgeSession {
   #autoPaired: boolean = false
   #lastUpdated: number
 
-  constructor({ Connector, onUpdate, metadata, debug, config, wagmiConfig }: HWBridgeSessionProps) {
+  constructor({ Connector, onUpdate, debug, config, strategy }: HWBridgeSessionProps) {
     this.#sessionId = short.generate()
+
+    this.connect = this.connect.bind(this)
+    this.disconnect = this.disconnect.bind(this)
+
     this.#connector = new Connector({
-      metadata,
       debug,
       config,
       onAutoPairing: this.#onAutoPairing.bind(this),
-      wagmiConfig,
+      onDisconnect: this.disconnect,
+      strategy,
     })
 
     this.#onUpdate = (session: HWBridgeSession | null) => {
@@ -30,10 +35,7 @@ export class HWBridgeSession {
       onUpdate(session)
     }
 
-    this.connect = this.connect.bind(this)
-    this.disconnect = this.disconnect.bind(this)
-
-    this.#initSession(wagmiConfig)
+    this.#initSession(strategy)
   }
 
   isSessionFor(who: HWBridgeConnectorInstance | any): boolean {
@@ -82,7 +84,7 @@ export class HWBridgeSession {
     return this
   }
 
-  async #initSession(wagmiConfig: Config): Promise<HWBridgeSession> {
+  async #initSession(strategy: ConnectionStrategy): Promise<HWBridgeSession> {
     this.#isLoading = true
     this.#onUpdate()
 
@@ -92,18 +94,33 @@ export class HWBridgeSession {
 
       this.#onUpdate()
 
-      // If there are no mipds, just try getting the native wallets connection state
-      if (!wagmiConfig.state.connections.size) {
-        resolve(await this.#setConnectionState())
-      }
+      if (strategy instanceof WagmiConnectionStrategy) {
+        const wagmiConfig = strategy.controller as Config
 
-      // Otherwise, wait for wagmi store to be initialized, and detect the active connections
-      return wagmiConfig.subscribe(
-        async (state) => {
-          if (state.status === 'connected' && !this.#isInitialized) resolve(await this.#setConnectionState())
-        },
-        () => null,
-      )
+        // If there are no mipds, just try getting the native wallets connection state
+        if (!wagmiConfig.state.connections.size) {
+          resolve(await this.#setConnectionState())
+        }
+
+        // Otherwise, wait for wagmi store to be initialized, and detect the active connections
+        return wagmiConfig.subscribe(
+          async (state) => {
+            if (state.status === 'connected' && !this.#isInitialized) {
+              const recognizedConnectedChain = strategy.supportedChains.find(({ id }) => id === state.chainId)
+
+              // If an EVM wallet is connected, set the connected chain to the actual connection strategy
+              if (recognizedConnectedChain) {
+                strategy.setChain(recognizedConnectedChain)
+              }
+
+              resolve(await this.#setConnectionState())
+            }
+          },
+          () => null,
+        )
+      } else {
+        return resolve(await this.#setConnectionState())
+      }
     })
   }
 

@@ -15,6 +15,12 @@ export enum ConnectorType {
   ETHEREUM = 'ETHEREUM',
 }
 
+export enum ConnectionStrategyType {
+  WAGMI = 'WAGMI',
+  HWC = 'HEDERA_WALLET_CONNECT',
+  UNKNOWN = 'UNKNOWN',
+}
+
 export enum HWBridgeQueryKeys {
   ACCOUNT_ID = 'accountId',
   EVM_ADDRESS = 'evmAddress',
@@ -34,11 +40,15 @@ export enum HWBridgeQueryKeys {
 export enum HederaChainIds {
   mainnet = 295,
   testnet = 296,
+  previewnet = 297,
+  devnet = 298,
 }
 
 export const HederaNetworks: { [key: number]: HederaNetwork } = {
   [HederaChainIds.mainnet]: 'mainnet',
   [HederaChainIds.testnet]: 'testnet',
+  [HederaChainIds.previewnet]: 'previewnet',
+  [HederaChainIds.devnet]: 'devnet',
 }
 
 export const CHAINS: Chain[] = [HederaMainnet, HederaTestnet]

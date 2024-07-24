@@ -1,7 +1,6 @@
-import { MM_APP_METADATA_STORAGE_KEY } from './constants'
 import { EvmConnector } from '../EvmConnector'
 import { HWBConnectorProps } from '../types'
-import { Client, createClient, custom } from 'viem'
+import { Chain, Client, createClient, custom } from 'viem'
 import {
   connect,
   watchChainId,
@@ -13,6 +12,8 @@ import {
 import { metaMask } from 'wagmi/connectors'
 import MetamaskIconWhite from '../../../assets/metamask-icon.png'
 import MetamaskIconDark from '../../../assets/metamask-icon-dark.png'
+import { Config } from 'wagmi'
+import { getChainById } from '../../../utils'
 
 class MetamaskConnector extends EvmConnector {
   private readonly _onAutoPairing: (signer: Client | null) => void
@@ -38,13 +39,13 @@ class MetamaskConnector extends EvmConnector {
   }
 
   _bindWatchEvents() {
-    this._unwatchChainId = watchChainId(this._wagmiConfig, {
+    this._unwatchChainId = watchChainId(this._strategy.controller as Config, {
       onChange: async (chainId, prevChainId) => {
         if (chainId !== prevChainId) {
           const client = await this.getConnection()
 
           if (client) {
-            this.setChain(chainId)
+            this._strategy.setChain(getChainById(this._strategy.supportedChains, chainId) as Chain)
             return this._onAutoPairing(client)
           }
 
@@ -53,7 +54,7 @@ class MetamaskConnector extends EvmConnector {
       },
     })
 
-    this._unwatchAccount = watchAccount(this._wagmiConfig, {
+    this._unwatchAccount = watchAccount(this._strategy.controller as Config, {
       onChange: async (account, prevAccount) => {
         if (account.isDisconnected || !account.address || !account.chainId) {
           if (this._debug) console.log('[Metamask Connector]: Account changed and disconnected ', account)
@@ -84,12 +85,12 @@ class MetamaskConnector extends EvmConnector {
     if (this._debug) console.log('[Metamask Connector]: Trying to build the signer for: ', account)
     this._bindWatchEvents()
 
-    if (!this._chain) throw new Error('Unsupported chain')
+    if (!this._strategy.chain) throw new Error('Unsupported chain')
 
     const provider = await this._wagmiConnector?.getProvider()
     const client = createClient({
       account,
-      chain: this._chain,
+      chain: this._strategy.chain,
       transport: custom(provider as any),
     })
 
@@ -111,7 +112,7 @@ class MetamaskConnector extends EvmConnector {
       return null
     }
 
-    const connections = Array.from(this._wagmiConfig.state.connections.entries())
+    const connections = Array.from((this._strategy.controller as Config).state.connections.entries())
       .map(([key, { accounts, chainId }]) => (key === this._wagmiConnector?.uid ? { accounts, chainId } : null))
       .filter(Boolean)
 
@@ -137,18 +138,16 @@ class MetamaskConnector extends EvmConnector {
         if (!connectedAccounts?.length) return null
 
         if (this._debug) console.log('[Metamask Connector]: Connected accounts found:', connectedAccounts)
-        this.setChain(this._wagmiConfig.chains[0].id)
-        localStorage.setItem(MM_APP_METADATA_STORAGE_KEY, JSON.stringify(this._metadata))
+        this._strategy.setChain((this._strategy.controller as Config).chains[0])
         return await this._getClient(connectedAccounts[0])
       }
 
-      const { accounts, chainId } = await connect(this._wagmiConfig, {
+      const { accounts, chainId } = await connect(this._strategy.controller as Config, {
         connector: this._wagmiConnector,
-        chainId: this._wagmiConfig.chains[0].id,
+        chainId: (this._strategy.controller as Config).chains[0].id,
       })
 
-      this.setChain(chainId)
-      localStorage.setItem(MM_APP_METADATA_STORAGE_KEY, JSON.stringify(this._metadata))
+      this._strategy.setChain(getChainById(this._strategy.supportedChains, chainId) as Chain)
       return await this._getClient(accounts[0])
     } catch (e) {
       // wagmi metamask connector is not waiting enough before getting the new chainId,
@@ -198,14 +197,13 @@ class MetamaskConnector extends EvmConnector {
   }
 
   isWalletStateAvailable() {
-    return !!localStorage.getItem(MM_APP_METADATA_STORAGE_KEY)
+    return (this._strategy.controller as Config).state.connections.size > 0
   }
 
   async wipePairingData() {
     try {
-      localStorage.removeItem(MM_APP_METADATA_STORAGE_KEY)
       this._unbindWatchEvents()
-      disconnect(this._wagmiConfig, {
+      disconnect(this._strategy.controller as Config, {
         connector: this._wagmiConnector,
       })
       return true
@@ -219,8 +217,8 @@ class MetamaskConnector extends EvmConnector {
     return false
   }
 
-  get sdk(): any {
-    return null
+  get sdk(): Config {
+    return this._strategy.controller as Config
   }
 }
 

@@ -1,27 +1,27 @@
 import { HWBConnectorProps, HWBridgeConnector } from './connectors/types'
 import { HWBridge } from './index'
 import { HWBridgeSession } from './HWBridgeSession'
-import { HashpackDAppMetadata, HashConnectWallet } from './connectors/HashpackConnector/types'
-import { BladeDAppMetadata, BladeWallet } from './connectors/BladeConnector/types'
 import { MagicWallet } from './connectors/MagicConnector/MagicWallet'
 import { MagicLoginConfig } from './connectors/MagicConnector/types'
-import { Client } from 'viem'
-import { Config } from 'wagmi'
-
-export type HWBridgeDAppMetadata = HashpackDAppMetadata | BladeDAppMetadata
+import { Chain, Client } from 'viem'
+import { Config as WagmiConfig } from 'wagmi'
+import { DAppConnector, DAppSigner } from '@hashgraph/hedera-wallet-connect'
+import { SignClientTypes } from '@walletconnect/types'
 
 export type HWBridgeProps = {
-  metadata: HWBridgeDAppMetadata
+  metadata: SignClientTypes.Metadata
+  projectId: string
   defaultConnector?: HWBridgeConnector
   connectors: HWBridgeConnector[]
+  chains: Chain[]
   multiSession?: boolean
   debug?: boolean
-  wagmiConfig: Config
 }
 
+export type ConnectionController = WagmiConfig | DAppConnector
 export type ConnectionConfig = MagicLoginConfig
 
-export type HederaSignerType = HashConnectWallet | BladeWallet
+export type HederaSignerType = DAppSigner
 export type EthereumSignerType = Client
 export type OtherSignerType = MagicWallet
 

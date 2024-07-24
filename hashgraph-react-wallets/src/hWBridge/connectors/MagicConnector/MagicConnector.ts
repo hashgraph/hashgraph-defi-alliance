@@ -10,6 +10,7 @@ import { LoginModules, OAUTH_DEFAULT_REDIRECT_PATH } from './constants'
 import MagicIconWhite from '../../../assets/magic-icon.png'
 import MagicIconDark from '../../../assets/magic-icon-dark.png'
 import { HederaConnector } from '../HederaConnector'
+import { chainToNetworkName } from '../../../utils'
 
 class MagicConnector extends HederaConnector {
   private readonly _magic: InstanceWithExtensions<SDKBase, HederaExtension[] | OAuthExtension[]>
@@ -29,7 +30,7 @@ class MagicConnector extends HederaConnector {
     if (!this._config?.publicApiKey) throw new Error('`publicApiKey` is missing from MagicConnector config')
 
     this._magic = new Magic(this._config.publicApiKey || '', {
-      extensions: [new HederaExtension({ network: this._network }), new OAuthExtension()],
+      extensions: [new HederaExtension({ network: chainToNetworkName(this.chain) }), new OAuthExtension()],
     })
   }
 
@@ -41,7 +42,7 @@ class MagicConnector extends HederaConnector {
 
     return new MagicWallet({
       accountId: publicAddress || '',
-      provider: new MagicProvider(this._network),
+      provider: new MagicProvider(chainToNetworkName(this.chain)),
       publicKey: publicKeyDer,
       magicSign,
     })
@@ -101,7 +102,7 @@ class MagicConnector extends HederaConnector {
 
   async wipePairingData(): Promise<boolean> {
     try {
-      if (this._debug) console.log('[Blade Connector]: Kill Magic Wallet session')
+      if (this._debug) console.log('[Magic Connector]: Kill Magic Wallet session')
       return await this._magic.user.logout()
     } catch (e) {
       console.error(e)

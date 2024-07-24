@@ -45,12 +45,8 @@ export const associateTokens = async <TWallet extends HWBridgeSession>({
   if (wallet.connector.type === ConnectorType.HEDERA) {
     const signer = wallet.signer as HederaSignerType
 
-    const transaction = await new TokenAssociateTransaction()
-      .setAccountId(signer.getAccountId())
-      .setTokenIds(tokens)
-      .freezeWithSigner(signer)
-
-    const signTx = await transaction.signWithSigner(signer)
+    const transaction = new TokenAssociateTransaction().setAccountId(signer.getAccountId()).setTokenIds(tokens)
+    const signTx = await transaction.freezeWithSigner(signer)
     const txResponse = await signTx.executeWithSigner(signer)
 
     return txResponse.transactionId?.toString() ?? null
@@ -120,8 +116,7 @@ export const approveTokensAllowance = async <TWallet extends HWBridgeSession>({
     }
 
     const frozenTx = await allowanceApproveTransaction.freezeWithSigner(signer)
-    const signTx = await frozenTx.signWithSigner(signer)
-    const txResponse = await signTx.executeWithSigner(signer)
+    const txResponse = await frozenTx.executeWithSigner(signer)
 
     return txResponse.transactionId?.toString() ?? null
   }
@@ -201,8 +196,7 @@ export const approveTokensNFTAllowance = async <TWallet extends HWBridgeSession>
     }
 
     const frozenTx = await allowanceApproveTransaction.freezeWithSigner(signer)
-    const signTx = await frozenTx.signWithSigner(signer)
-    const txResponse = await signTx.executeWithSigner(signer)
+    const txResponse = await frozenTx.executeWithSigner(signer)
 
     return txResponse.transactionId?.toString() ?? null
   }

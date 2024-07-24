@@ -11,6 +11,7 @@ import {
 import { queryMirror } from './mirror.actions'
 import { MirrorBalancesResponse } from './types'
 import { HederaSignerType } from '../hWBridge/types'
+import { chainToNetworkName } from '../utils'
 
 export const getAccountId = async <TWallet extends HWBridgeSession>({
   wallet,
@@ -31,7 +32,7 @@ export const getAccountId = async <TWallet extends HWBridgeSession>({
     const accountMirrorResponse = await queryMirror<{ account: string }[]>({
       path: `/api/v1/accounts/${wagmiAddress}`,
       queryKey: ['getHederaAccountId'],
-      options: { network: wallet.connector.network, firstOnly: true },
+      options: { network: chainToNetworkName(wallet.connector.chain), firstOnly: true },
     })
 
     if (!accountMirrorResponse?.[0].account) {
@@ -60,7 +61,7 @@ export const getEvmAddress = async <TWallet extends HWBridgeSession>({
       const accountMirrorResponse = await queryMirror<{ evm_address: string }[]>({
         path: `/api/v1/accounts/${accountId}`,
         queryKey: ['getHederaEvmAddress'],
-        options: { network: wallet.connector.network, firstOnly: true },
+        options: { network: chainToNetworkName(wallet.connector.chain), firstOnly: true },
       })
 
       if (!accountMirrorResponse?.[0].evm_address) {
@@ -93,7 +94,7 @@ export const getBalance = async <TWallet extends HWBridgeSession>({
       const balancesMirrorResponse = await queryMirror<MirrorBalancesResponse[]>({
         path: `/api/v1/balances?account.id=${accountId}`,
         queryKey: ['getBalance'],
-        options: { network: wallet.connector.network },
+        options: { network: chainToNetworkName(wallet.connector.chain) },
       })
 
       const balance = (balancesMirrorResponse?.[0].balances?.[0]?.balance || 0) / Math.pow(10, DEFAULT_TOKEN_DECIMALS)
@@ -115,7 +116,7 @@ export const getBalance = async <TWallet extends HWBridgeSession>({
   if (!address) throw new Error('Could not determine your wallet address')
 
   const wagmiBalance = await wagmi_getBalance(config, { address })
-  const value = Number(wagmiBalance.value / BigInt(Math.pow(10, DEFAULT_TOKEN_DECIMALS_ETHEREUM)))
+  const value = Number(wagmiBalance.value) / Math.pow(10, DEFAULT_TOKEN_DECIMALS_ETHEREUM)
 
   const balance: UserBalanceResult = {
     ...wagmiBalance,

@@ -4,7 +4,7 @@ declare global {
   }
 }
 
-export type HederaNetwork = 'testnet' | 'mainnet' | 'previewnet'
+export type HederaNetwork = 'testnet' | 'mainnet' | 'previewnet' | 'devnet'
 
 export type UserBalanceResult = {
   decimals: number

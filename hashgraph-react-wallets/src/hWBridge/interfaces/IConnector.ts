@@ -1,6 +1,6 @@
-import { Chain } from 'viem'
 import { ConnectionConfig, ConnectorConfig, HNSResult } from '../types'
 import { ConnectorType } from '../../constants'
+import { Chain } from 'viem'
 
 interface IConnector {
   getConnection(): void
@@ -15,8 +15,6 @@ interface IConnector {
 
   resolveHNS(accountId: string): Promise<HNSResult | null>
 
-  setChain(chainId: number): void
-
   get type(): ConnectorType
 
   get isExtensionRequired(): boolean
@@ -25,7 +23,7 @@ interface IConnector {
 
   get config(): ConnectorConfig
 
-  get chain(): Chain | null
+  get chain(): Chain
 }
 
 export default IConnector
