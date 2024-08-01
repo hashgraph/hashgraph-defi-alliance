@@ -1,47 +1,77 @@
-import { HWBridgeDAppMetadata, HWBridgeProps, HWBridgeSessionProps } from './types'
+import { HWBridgeProps, HWBridgeSessionProps } from './types'
 import { ConnectorConfig, HWBridgeConnector } from './connectors/types'
 import { HWBridgeSession } from './HWBridgeSession'
 import { EventEmitter } from 'events'
 import Subscription, { ON_SESSION_CHANGE_EVENT } from './events'
-import { Config } from 'wagmi'
+import { ConnectionStrategy, HWCConnectionStrategy, WagmiConnectionStrategy } from './strategies'
+import { ConnectionStrategyType } from '../constants'
+import { Chain } from 'viem'
+import { SignClientTypes } from '@walletconnect/types'
 
 class HWBridge {
   readonly #events: EventEmitter
-  readonly #metadata?: HWBridgeDAppMetadata
+  readonly #metadata: SignClientTypes.Metadata
   readonly #defaultConnector?: HWBridgeConnector
   readonly multiSession: boolean
   readonly debug: boolean
   #sessions: HWBridgeSession[]
+  #strategies: ConnectionStrategy[]
+  #connectors: HWBridgeConnector[]
+  #chains: Chain[]
+  #projectId: string
 
   constructor({
     metadata,
+    projectId,
     defaultConnector,
     connectors = [],
+    chains = [],
     multiSession = false,
     debug = false,
-    wagmiConfig = {} as Config,
   }: HWBridgeProps) {
     this.#events = new EventEmitter()
     this.#metadata = metadata
+    this.#projectId = projectId
     this.#defaultConnector = defaultConnector
+    this.#connectors = connectors
+    this.#chains = chains
     this.multiSession = multiSession
     this.debug = debug
-    this.#sessions = this.#initSessions(connectors, wagmiConfig) || []
   }
 
-  #initSessions(_connectors: (HWBridgeConnector | [HWBridgeConnector, ConnectorConfig])[], wagmiConfig: Config) {
+  async init(strategies: ConnectionStrategy[]) {
+    const defaultConnectionStrategies = [
+      new HWCConnectionStrategy({ metadata: this.#metadata, projectId: this.#projectId }),
+      new WagmiConnectionStrategy(),
+      ...strategies,
+    ]
+
+    try {
+      this.#strategies = await Promise.all(
+        defaultConnectionStrategies.map(async (strategy) => {
+          return await strategy.build(this.#chains, this.#connectors)
+        }),
+      )
+
+      this.#sessions = this.#initSessions(this.#connectors) || []
+    } catch (error) {
+      console.error('Failed to init the connection strategies.', error)
+      throw error
+    }
+  }
+
+  #initSessions(_connectors: (HWBridgeConnector | [HWBridgeConnector, ConnectorConfig])[]) {
     if (Array.isArray(_connectors) && _connectors.length > 0) {
       return _connectors
-        .map((ConectorType: HWBridgeConnector | [HWBridgeConnector, any]) => {
-          const [Connector, config] = Array.isArray(ConectorType) ? ConectorType : [ConectorType]
+        .map((ConnectorType: HWBridgeConnector | [HWBridgeConnector, any]) => {
+          const [Connector, config] = Array.isArray(ConnectorType) ? ConnectorType : [ConnectorType]
 
           return new HWBridgeSession({
             Connector: Connector,
-            metadata: this.#metadata,
             debug: this.debug,
             config,
             onUpdate: this.#updateBridge.bind(this),
-            wagmiConfig,
+            strategy: this.getStrategy(Connector.strategy),
           } as HWBridgeSessionProps)
         })
         .filter(Boolean)
@@ -49,6 +79,10 @@ class HWBridge {
       console.warn('[HWBridge] Initialized without connectors')
       return []
     }
+  }
+
+  getStrategy(type: ConnectionStrategyType) {
+    return this.#strategies.find((strategy) => strategy.type === type)
   }
 
   getSessionFor<T extends HWBridgeConnector>(who: T): HWBridgeSession {
@@ -62,6 +96,8 @@ class HWBridge {
   async #updateBridge(newConnection?: HWBridgeSession | null) {
     if (newConnection) {
       if (!this.multiSession) {
+        if (!this.#sessions?.length) return
+
         this.#sessions = await Promise.all(
           this.#sessions.map(async (session) => {
             if (session.sessionId === newConnection.sessionId) return session

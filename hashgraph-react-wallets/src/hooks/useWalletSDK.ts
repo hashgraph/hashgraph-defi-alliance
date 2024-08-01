@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
-import { BladeSDK, HWBridgeConnector, HashConnectSDK, MagicSDK } from '../hWBridge/connectors/types'
+import { HWBridgeConnector, DappConnectorSDK, WagmiSDK, MagicSDK } from '../hWBridge/connectors/types'
 import { useWallet } from './useWallet'
 
-type ConnectorSDKs = HashConnectSDK | BladeSDK | MagicSDK
+type ConnectorSDKs = DappConnectorSDK | WagmiSDK | MagicSDK
 
 export function useWalletSDK<T extends ConnectorSDKs>(connector?: HWBridgeConnector | null) {
   const wallet = useWallet(connector)

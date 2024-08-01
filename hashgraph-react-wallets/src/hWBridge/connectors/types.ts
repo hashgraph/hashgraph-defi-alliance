@@ -1,21 +1,17 @@
-import { HashpackConnector } from './HashpackConnector'
-import { BladeConnector } from './BladeConnector'
-import { HNSResolver, HWBridgeDAppMetadata, HWBridgeSigner, MagicConfig } from '../types'
+import { HNSResolver, HWBridgeSigner, MagicConfig } from '../types'
 import { MagicConnector } from './MagicConnector'
 import { SDKBase, InstanceWithExtensions } from '@magic-sdk/provider'
 import { HederaExtension } from '@magic-ext/hedera'
-import { Config } from 'wagmi'
 import { MetamaskConnectorConfig } from './MetamaskConnector/types'
 import { MetamaskConnector } from './MetamaskConnector'
+import { ConnectionStrategy } from '../strategies'
+import { Chain } from 'viem'
+import { HWCConnector } from './HWCConnector'
 
-export type HWBridgeConnector =
-  | typeof HashpackConnector
-  | typeof BladeConnector
-  | typeof MagicConnector
-  | typeof MetamaskConnector
+export type HWBridgeConnector = typeof HWCConnector | typeof MagicConnector | typeof MetamaskConnector
 
 export type HWBridgeConnectorInstance = InstanceType<
-  typeof HashpackConnector | typeof BladeConnector | typeof MagicConnector | typeof MetamaskConnector
+  typeof HWCConnector | typeof MagicConnector | typeof MetamaskConnector
 >
 
 export type WagmiConnectorConfig = MetamaskConnectorConfig
@@ -30,17 +26,17 @@ export type ConnectorConfig = {
   Partial<WagmiConnectorConfig>
 
 export type HWBConnectorProps = {
-  metadata: HWBridgeDAppMetadata
   debug: boolean
   config?: ConnectorConfig
+  extensionId?: string
   onAutoPairing: (signer: HWBridgeSigner | null) => void
-  wagmiConfig: Config
+  onDisconnect: () => Promise<boolean>
+  chain: Chain
+  strategy: ConnectionStrategy
 }
 
 export type MagicSDK = InstanceWithExtensions<SDKBase, HederaExtension[]>
-export type { HashConnect as HashConnectSDK } from 'hashconnect'
-export type { BladeConnector as BladeSDK } from '@bladelabs/blade-web3.js'
+export type { DAppConnector as DappConnectorSDK } from '@hashgraph/hedera-wallet-connect'
+export type { Config as WagmiSDK } from 'wagmi'
 
-export * from './HashpackConnector/types'
-export * from './BladeConnector/types'
 export * from './MagicConnector/types'

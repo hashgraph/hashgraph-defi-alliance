@@ -4,18 +4,20 @@ import { useWallet } from './useWallet'
 import { tanstackQueryClient } from '..'
 import { getTransactionReceipt } from '../actions'
 import { HWBridgeQueryKeys, regexPatterns } from '../constants'
+import { Abi, DecodeErrorResultReturnType } from 'viem'
+import { chainToNetworkName } from '../utils'
 
-interface IUseWatchTransactionReceiptProps<Connector> {
+interface IUseWatchTransactionReceiptProps<Connector, abi extends Abi | readonly unknown[]> {
   connector?: Connector | null
-  contract?: any
+  abi?: abi
   retryInterval?: number
   retryMaxAttempts?: number
 }
 
-export function useWatchTransactionReceipt<TConnector extends HWBridgeConnector>(
-  props?: IUseWatchTransactionReceiptProps<TConnector>,
+export function useWatchTransactionReceipt<TConnector extends HWBridgeConnector, abi extends Abi | readonly unknown[]>(
+  props?: IUseWatchTransactionReceiptProps<TConnector, abi>,
 ) {
-  const { connector, contract, ...options } = props || {}
+  const { connector, abi, ...options } = props || {}
   const wallet = useWallet(connector)
 
   const handleWatchTransactionReceipt = useCallback(
@@ -25,7 +27,7 @@ export function useWatchTransactionReceipt<TConnector extends HWBridgeConnector>
         onSuccess: <Transaction extends { transaction_id: string }>(transaction: Transaction) => Transaction
         onError: <Transaction extends { transaction_id: string }>(
           transaction: Transaction,
-          error: string | string[] | null,
+          error: string | DecodeErrorResultReturnType | null,
         ) => Transaction
       },
     ) => {
@@ -37,13 +39,20 @@ export function useWatchTransactionReceipt<TConnector extends HWBridgeConnector>
       return await tanstackQueryClient.fetchQuery({
         queryKey: [HWBridgeQueryKeys.WATCH_TRANSACTION_RECEIPT, wallet.lastUpdated, transactionIdOrHash],
         queryFn: () =>
-          getTransactionReceipt(wallet, contract, transactionIdOrHash, wallet.connector.network, callbacks, {
-            retryInterval: options?.retryInterval,
-            retryMaxAttempts: options?.retryMaxAttempts,
-          }),
+          getTransactionReceipt(
+            wallet,
+            abi ?? [],
+            transactionIdOrHash,
+            chainToNetworkName(wallet.connector.chain),
+            callbacks,
+            {
+              retryInterval: options?.retryInterval,
+              retryMaxAttempts: options?.retryMaxAttempts,
+            },
+          ),
       })
     },
-    [wallet, contract, options?.retryInterval, options?.retryMaxAttempts],
+    [wallet, abi, options?.retryInterval, options?.retryMaxAttempts],
   )
 
   return {

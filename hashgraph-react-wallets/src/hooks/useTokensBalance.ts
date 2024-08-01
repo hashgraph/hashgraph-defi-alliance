@@ -5,6 +5,7 @@ import { useAccountId } from './useAccountId'
 import { MirrorTokensResponse } from '../actions/types'
 import { HWBridgeQueryKeys } from '../constants'
 import { useWallet } from './useWallet'
+import { chainToNetworkName } from '../utils'
 
 interface IUseTokensBalanceProps<Connector> {
   connector?: Connector | null
@@ -29,7 +30,7 @@ export function useTokensBalance<TConnector extends HWBridgeConnector>({
       path: `/api/v1/accounts/${connectedAccountId}/tokens`,
       queryKey: [HWBridgeQueryKeys.TOKENS_BALANCE],
       options: {
-        network: wallet.connector.network,
+        network: chainToNetworkName(wallet.connector.chain),
       },
     })
   }
