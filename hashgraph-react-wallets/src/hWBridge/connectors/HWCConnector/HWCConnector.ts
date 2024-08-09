@@ -82,8 +82,10 @@ class HWCConnector extends HederaConnector {
         console.error(e)
         reject(null)
       } finally {
-        this._bindEvents()
-        resolve(this.getSignerForSession(connection!.topic))
+        if (connection!) {
+          this._bindEvents()
+          resolve(this.getSignerForSession(connection!.topic))
+        }
       }
     })
   }
