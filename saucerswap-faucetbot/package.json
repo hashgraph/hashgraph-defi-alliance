@@ -13,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@hashgraph/sdk": "^2.13.1",
-    "aws-sdk": "^2.1075.0",
+    "aws-sdk": "^2.1675.0",
     "discord.js": "^13.6.0",
     "dotenv": "^10.0.0",
     "mysql2": "^2.3.3",
